@@ -1,0 +1,252 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%Przykładowy dokument%%%%%%%%%%%%%%%
+%%%%%%%%%%wraz z klasą pracadyp.cls%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% w nawiasie kwadratowym wpisujemy rodzaj pracy: 
+% magisterska, licencjacka, inzynierska
+\documentclass[licencjacka]{pracadypl}
+
+
+%% ważne definicje %%
+\usepackage{tgtermes}
+\usepackage[T1]{fontenc}
+\usepackage{polski}
+\usepackage[utf8]{inputenc}
+\input glyphtounicode
+\pdfgentounicode=1
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{titlesec}
+\usepackage{color}
+\usepackage{xcolor}
+\usepackage{float}
+\usepackage{tablefootnote}
+\usepackage{hyperref}
+\usepackage{titling}
+\bibliographystyle{plain}
+
+\def\mgr{magisterska}
+\def\lic{licencjacka}
+\def\inz{inżynierska}
+
+\def\sk{Słowa kluczowe}
+\def\kw{Keywords}
+\def\et{Title in English}
+%% koniec ważnych definicji %%
+
+
+
+%% wypełnia Autor pracy %%
+
+%autor pracy
+\author{Kajetan Owczarek}
+%numer albumu
+\nralbumu{396396}
+%tytuł pracy
+\title{Przykłady zastosowania technik optymalizacji czasu wczytywania witryny internetowej}
+%kierunek studiów
+\kierunek{Informatyka}
+%promotor w dopełniaczu
+\opiekun{prof. dr Wojciecha Horzelskiego}
+\katedra{Katedra Informatyki Stosowanej}
+%rok
+\date{2023}
+%Słowa kluczowe:
+\slkluczowe{pierwsze, drugie, trzecie, czwarte}
+%tytuł po angielsku
+\tytulang{Title in English}
+%słowa kluczowe po angielsku
+\keywords{first, second, third, fourth}
+%% koniec ważnych definicji %%
+
+%% APD %%
+%% w systemie APD należy jeszcze wpisać, poza powyższymi informacjami, streszczenie oraz streszczenie w języku angielskim  %%
+
+
+%%% definicje %%%
+\def\pd{\noindent \textbf{Dowód.~}} %%początek dowodu
+\def\kd{\hfill\mbox{$\rule{2mm}{2mm}$}} %%koniec dowodu
+\newtheorem{defi}{Definicja}[section]
+\newtheorem{uwaga}{Uwaga}[section]
+\newtheorem{tw}{Twierdzenie}[section]
+\newtheorem{lem}{Lemat}[section]
+\newtheorem{wn}{Wniosek}[section]
+\renewcommand\thetw{\thesection.\arabic{tw}.}
+\renewcommand\thedefi{\thesection.\arabic{defi}.}
+\renewcommand\theuwaga{\thesection.\arabic{uwaga}.}
+\renewcommand\thetw{\thesection.\arabic{tw}.}
+\renewcommand\thelem{\thesection.\arabic{lem}.}
+\renewcommand\thewn{\thesection.\arabic{wn}.}
+%
+\definecolor{wmiigreen}{rgb}{0.0, 0.5, 0.0}
+\titleformat{\chapter}[display]
+  {\normalfont\huge\bfseries\color{wmiigreen}}{\chaptertitlename\ \thechapter}{10pt}{\Huge}
+ %
+\linespread{1.3}
+%%% koniec definicji ze wzorca %%%
+
+
+%%% osobiste definicje
+
+\newcommand{\selfnote}[1]{\colorbox{pink}{#1}}
+\hypersetup{
+  colorlinks=false,
+  linkcolor=red,
+  pdftitle={\thetitle},
+  pdfborder={0 0 0}
+}
+
+%%% koniec definicji
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+
+
+\chapter{Wstęp}
+
+Pomimo nieustającego rozwoju technologii telekomunikacji oraz zwiększania prędkości łączy internetowych, problem wydajności usług internetowych nie zniknął, ani nie zapowiada się, aby tak się zadziało. Od potrzeb łączności poza terenami zabudowanymi, przez starzejący lub ograniczony sprzęt, po malejącą cierpliwość użytkowników, rozważanie, jak najszybciej dostarczyć treści z serwera do urządzenia użytkownika jest powszechne w pracy ze stronami internetowymi.
+
+Celem tej pracy jest zaprezentowanie serii technik i optymalizacji, pozwalających na poprawienie czasów wczytywania witryn internetowych na urządzeniach użytkownika, oraz porównanie ich przy pomocy obiektywnych i powszechnie stosowanych narzędzi i metryk.
+
+Celem zilustrowania efektów takich optymalizacji, a w szczególności wpływ ich braku na używalność strony, zaprezentuję przykładową stronę zrobioną przy użyciu najprostszych, najpopularniejszych technik. Celem moim jest stworzenie strony, która zrobiona jest kompetentnie, acz z zerową uwagą przyłożoną do wydajności strony pod względem wczytywania i procesu uruchamiania strony. Następnie, poprzez stosowanie technik wpływających minimalnie na funkcjonalność strony, poprawiać wyniki pomiarów obiektywnych.
+
+\chapter{Sposób pomiarów}
+Celem usunięcia jak najwięcej zewnętrznych zmiennych w danych pomiarowych,
+% \footnote{Choć dla porównania wydajności wyniki z jednej maszyny powinny wystarczyć, niestety zaobserwowałem znaczne, trudne do zrozumienia fluktuacje wydajności mojego komputera. Wyniki na nim były by więc wewnętrznie niespójne.}
+skorzystam z narzędzia używanego powszechnie w branży, którym jest WebPageTest.
+
+WebPageTest to operowana przez firmę Catchpoint usługa, pozwalająca na wykonanie dokładnego pomiaru wczytywania strony w wybranym regionie, na emulowanym urządzeniu, w określonych warunkach sieciowych. Używając standaryzowanego środowiska, możemy usunąć wiele zmiennych wynikających z aktywności innych aplikacji na testującej maszynie oraz innych urządzeń w sieci. Sprawia to też, że wyniki są o wiele bardziej uniwersalne - mogąc odnieść się do środowiska ze znanymi charakterystykami wydajności, można usunąć element niepewności i zgadywania, na ile aplikowalne są dla naszych rozważań czyjeś wyniki. 
+
+WebPageTest dostarcza dokładny zapis procesu wczytywanie naszej witryny. Dane te są prezentowane w formie złożonego wykresu, o którym opowiem więcej w późniejszym rozdziale, kiedy zajmiemy się porównywaniem wydajności przed i po zastosowaniu technik.
+
+Rozważałem wcześniej użycie do pomiarów stworzonego przez Google narzędzia o nazwie Lighthouse, które stara się spełnić podobną funkcję oceny wydajności, acz analizuje też wiele innych metryk dotyczączych rzeczy jak używanie technologii pomagających osobą używającym czytników ekranu, optymalizacji pod kątem wyszukiwarek internetowych, czy współczesności strony. Niestety, sposób działania Lighthouse'a jest ograniczony w swojej dokładności. Zamiast dokonywać pełnej symulacji wydajności standardowego urządzenia, dokonuje on testy w pełnej prędkości, a następnie przeskalowując je. Tak jak nie jest to zła metoda żeby optymalizować lokalnie, gdyż Lighthouse sugeruje też sposoby poprawy, tak użycie go nie eliminuje częściowej zmienności wynikających z natury maszyny, na którym są dokonywane pomiary.
+
+\chapter{Startowy projekt}
+Żeby zilustrować techniki, które zostaną omówione później, oraz ich wpływ na wydajność wczytywania strony, potrzebna jest na to przestrzeń w formie przykładowej witryny. Tworząc ją, celowałem w popełnienie prostych do popełnienia błędów, oraz decyzje niesprzyjające czasowi wczytywania. Stworzyłem więc udawaną stronę z wiadomościami. Zawiera ona niemałą ilość zdjęć, dużo tekstu, oraz parę elementów interaktywnych. 
+
+\begin{figure}[H]
+  \includegraphics[width=\linewidth]{images/frontpage.png}
+  \caption{Nagłówek strony, karuzela z wiadomościami}
+  \label{fig:frontpage}
+\end{figure}
+
+\begin{figure}[H]
+  \includegraphics[width=\linewidth]{images/frontpage-articles.png}
+  \caption{Fragment listy artykułów}
+  \label{fig:frontpage-articles}
+\end{figure}
+
+\begin{figure}[H]
+  \includegraphics[width=\linewidth]{images/frontpage-dynamic-article.png}
+  \caption{Dynamiczne treści - wyniki ankiety w wykresie}
+  \label{fig:frontpage-dynamic}
+\end{figure}
+
+Żeby zaprezentować efekty dużej ilości treści w dokumencie HTML, dodałem do niej jedno ze źródeł do treści tu zawartej, czyli specyfikację parsowania dokumentów HTML.
+
+\begin{figure}[H]
+  \includegraphics[width=\linewidth]{images/frontpage-spec.png}
+  \caption{Duże treści - specyfikacja parsowania HTML}
+  \label{fig:frontpage-spec}
+\end{figure}
+
+
+
+
+\chapter{Wstępna analiza wydajności}
+Zanim zaczniemy poprawianie naszej witryny, powinniśmy zbadać, jak zachowuje się nasz projekt startowy. Optymalizując na ślepo, jest prosto zmarnować czas przyśpieszając elementy, nie zmieniając finalnej wydajności\footnote{W przypadku tworzenia witryn internetowych jest to szczególnie prosty do popełnienia błąd. Interakcja równoległego wczytywania zasobów, oraz mechanizm zasobów blokujących może sprawić, że dowolne przyśpieszenie jednej cześci nie wpłynie zupełnie na finalną szybkość wczytania, gdyż całość przeglądarki będzie czekało na inny element.}. Głownym wynikiem wykonywania analiz przy pomocy WebPageTest'u jest wykres zwany waterfall'em, czyli wodospadem. Jest on bardzo gęsty w dane i zawiera przede wszystkim dane o połączeniach sieciowych oraz stanie przeglądarki. Omówię po krótce jak go odczytywać\footnote{Dostepna na stronie WebPageTest'u lekko interkatywna wersja tego wykresu pozwala odczytać te dane nieco prościej, oraz daje dostęp do dodatkowych informacji, których nie ma na obrazkowym waterfall'u.}, równocześnie zwracając uwagę na problemy, które można zobaczyć ze wstępnych testów;
+\begin{figure}[h!]
+  \includegraphics[width=\linewidth]{images/base-waterfall-all-final.png}
+  \caption{Wykres produkowany przez WebPageTest, zwany jako Waterfall}
+  \label{fig:waterfall-base}
+\end{figure}
+Na górze wykresu znajduje się legenda, informująca nas, które kolory na wykresie oznaczają jaką fazę rozpoczynania połączeń, oraz rodzaje treści przez te połączenia przesyłane. 
+
+Tuż pod nią, znajduje się głowna część, która zawiera najważniejsze dane, czyli wykres rozkładu czasowego realizacji kolejnych zapytań wykonywanych przez naszą przeglądarkę. Od góry do dołu mamy zapytania HTTP, od rozpoczętego najwcześniej do najpóźniej, natomiast od lewej do prawej mamy upływ czasu. Same okresy, kiedy zapytania naszej witryny były realizowane, są zaznaczone jako prostokąty na wykresie. Poprzez cienkie prostokąty są zaznaczane obszary czasu, kiedy połączenia nie postępowały stan wczytania naszej strony, specyficznie otwieranie połączeń i wykonywanie kodu JavaScript. Grubymi prostokątami jest za to zaznaczone, kiedy treści rzeczywiście były pobierane, na blado kiedy połączenie jest otwarte, ale nie są przesyłane dane, oraz na mocniejszy kolor, kiedy miało miejsce przesyłanie na łączu danych.
+
+Poniżej głownego wykresu, mamy informacje o zużyciu mocy procesora. W naszym przypadku nie będziemy mieli wiele okazji żeby skorzystać z tych danych, ale jest to możliwe, że dokonywanie dużej ilości obliczeń będzie opóźniać naszą witrynę, i wtedy to na tym wykresie to zobaczymy.
+
+Jeszcze niżej, znajduje się wykres zużycia łącza. Im linia na nim jest wyżej, tym więcej dostępnego naszemu testowem urządzeniowi łącza wykorzystujemy. W większości sytuacji chcemy, żeby nasza linia była jak najwyżej, gdyż to oznacza, że ograniczają nas zewnętrzne warunki sieciowe, a nie nasze własne urządzenie.
+
+Przedostatni wiersz jest zajęty przez wykres przetwarzania wykonywanego przez przeglądarkę. Wysokością przedstawia on, jak bardzo zajęty jest główny wątek przeglądarki (pełny na wysokość znaczy, że pętla wydarzeń przeglądarki była w pełni zajęta), natomiast kolor sygnalizuje, jakie działania dominowały w danym momencie.
+
+Ostatnim, zarazem najważniejszym i najmniej ważnym, jest wykres interaktywności. Na biało oznaczony jest czas, zanim strona była użytkownikowi wyświetlona, na czerwono kiedy przeglądarka była zbyt zajęta, by reagować na wejścia, a na zielono, kiedy wszystko działało. Tak jak wykres ten ilustruje bardzo ważny aspekt działania strony - dominacja czerwieni oznacza, że dla użytkownika wszystko wydaje się zacięte - tak nie daje on informacji, czemu tak się dzieje, oraz sugestii co można zmienić. Na szczęście wykres tuż nad nim bardzo silnie przekłada się na interaktywność, więc można traktować je jako wspólną część, górny jako dokładną wartość, dolny jako miarkę, czy przekroczyliśmy punkt upadku używalności. 
+
+Prócz tego, przez cały wykres przebiega kilka pionowych linii, które oznaczają kluczowe momenty we wczytywaniu strony, jak kiedy użytkownikowi wyświetliło się na ekranie cokolwiek, kiedy strona mogła po raz pierwszy reagować na wejścia użytkownika, czy kiedy nastąpiła największa zmiana wyglądu. Na tej wersji wykresu nie widać ich zbyt dobrze, gdyż wszystkie oznaczane tak wydarzenia zdarzyły się względnie wcześnie. Jednakże, na późniejszych wersjach wykresów, będziemy mogli używać ich, żeby znajdywać najważniejsze punkty, które chcemy, aby wydażały się jak najwcześniej.
+
+Wiedząc już, co oznaczają części naszego waterfall'a, możemy zauważyć, że wczytywanie naszej strony dominuje parę jasnofioletowych fioletowych zapytań. Korzystając z legendy i zrozumienia, jak wykres ten czytać, wiemy, że są to zdjęcia, które wczytują się długo, i intensywnie walczą o użycie łącza. Tak samo patrząc na zieloną kreskę wykresu przepustowości łącza widzimy, że używamy całość przydzielonego nam łącza przez większość czasu wczytywania strony. Nie jest to zła rzecz, bo to znaczy, że nasza strona może wczytywać się szybciej, o ile tylko dostanie szybsze połączenie.
+
+Zacznijmy więc optymalizować nasz projekt.
+
+\chapter{Optymalizacja witryny}
+\section{Optymalizacja zdjęć}
+Najprostrzmy sposobem, aby dodać niesłychaną ilość rozmiaru dowolnemu projektowi komputerowemu, to użycie nieskompresowanych zasobów w dużej rozdzielczości. 
+
+Żeby nabrać pewnej intuicji, jak wiele więcej miejsca zajmują zasoby w porównaniu do kodu, zróbmy pewne porównanie. Według zainstalowanego na mojej maszynie Windows'a 11, pliki systemu operacyjnego zajmują $28.3\text{GB}$. W takiej samej ilości danych moglibyśmy zmieścić:
+
+\begin{center}
+  \begin{tabular}{|c|c|c|}
+    \hline
+    Rodzaj treści & Ilość treści & Rozmiar jednostki \\
+    \hline
+    Anglojęzyczna wikipedia\footnotemark[3] & 1.333 & 21.23GB \\ 
+    Niekompresowane audio jakości CD & 44.6 godzin & 1411 Kbit/s \\
+    Niekompresowane wideo HD (720p 30fps) & 409 sekund & 553 Mbit/s \\
+    Niekompresowane dane ekranu iPhone 14 Pro & 20.8 sekund & 1.36 GB/s \\
+    \hline
+  \end{tabular}
+\end{center}
+
+TODO: Napisać, czemu to
+
+TODO: Napisać o tym, co było
+
+TODO: Napisać, jakie są dostępne formaty
+
+TODO: Opisać zmianę na webp, skrypt do tego
+
+TODO: Opisać wyniki
+
+\begin{figure}[H]
+  \includegraphics[width=\linewidth]{images/waterfall-after-webp.png}
+  \caption{Waterfall po zmianie formatu zdjęć z png na webp}
+  \label{fig:waterfall-after-webp}
+\end{figure}
+
+\footnotetext[3]{Skompresowana, rozmiar z \url{https://en.wikipedia.org/wiki/Wikipedia:Size_of_Wikipedia}}
+
+
+\vspace{5em}
+
+\begin{itemize}
+  \item Lepsze zdjęcia, format, rozmiary
+  \item Kompresja i h2
+  \item Async wczytywanie wielkich treści
+  \item Obcinanie bibliotek JS/CSS
+  \item Unikanie dużych bibliotek do prostych rzeczy
+\end{itemize}
+
+
+\chapter{Zakończenie}
+
+
+\begin{thebibliography}{7}
+\addcontentsline{toc}{chapter}{Bibliografia}
+%
+\bibitem{Lang}
+Serge Lang, 
+\textit{Algebra. Revised third edition}, 
+New York, Springer-Verlag, 2002.
+%
+\bibitem{Kostrykin} 
+Aleksiej Kostrykin, 
+\textit{Wstęp do algebry. Podstawy algebry},
+Warszawa, Wydawnictwo Naukowe PWN, 2022.
+\end{thebibliography}
+\end{document}
