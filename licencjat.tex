@@ -185,23 +185,43 @@ Wiedząc już, co oznaczają części naszego waterfall'a, możemy zauważyć, �
 Zacznijmy więc optymalizować nasz projekt.
 
 \chapter{Optymalizacja witryny}
-\section{Optymalizacja zdjęć}
-Najprostrzmy sposobem, aby dodać niesłychaną ilość rozmiaru dowolnemu projektowi komputerowemu, to użycie nieskompresowanych zasobów w dużej rozdzielczości. 
+\section{Kompresja}
+Najprostrzmy sposobem, aby dodać niesłychaną ilość rozmiaru dowolnemu projektowi komputerowemu, to użycie nieskompresowanych zasobów w dużej rozdzielczości. Dla przykładu, rozdzielczość FullHD, czyli $1920\times1080\left(=2073600\right)$ pikseli, współcześnie bardzo powszechną w każdej klasie jakościowo-cenowej\footnote{Wg Steam Hardware Survey, ponad 66\% użytkowników platformy Steam posiada właśnie taką rozdzielczość na swoim głównym monitorze. Choć dane tej platformy }, o standardowej formie zapisu koloru pikseli, czyli 3 kanały, po 8 bitów na kanał, daje $2073600\times3\times8 = 49766400$ bitów, czyli $49.77$ megabitów. Mając dostępny przeciętny polski internet, który według statystyk firmy Ookla\footnote{Dane wzięte z \url{https://www.speedtest.net/global-index/poland}} jest w stanie pobrać $107.85$ megabitów na sekundę, pobranie jednego, nieskompresowanego zrzutu ekranu zajęłoby $461$ milisekund. Gdybyśmy więc chcieli po prostu przesłać użytkownikom naszej strony całoś ekranu, który mają widzieć, to bez użycia żadnych optymalizacji przeciętne doświadczenie użytkownika to nieco ponad dwie klatki na sekundę płynności.
 
-Żeby nabrać pewnej intuicji, jak wiele więcej miejsca zajmują zasoby w porównaniu do kodu, zróbmy pewne porównanie. Według zainstalowanego na mojej maszynie Windows'a 11, pliki systemu operacyjnego zajmują $28.3\text{GB}$. W takiej samej ilości danych moglibyśmy zmieścić:
+Niezmiennie, usługi jak filmy czy seriale online, udostępnianie ekranu na komunikatorach jak Teams czy Discord, lub telekonferecjowanie w dużych grupach z wysokiej jakościami kamerkami jakoś obchodzą ograniczenia prędkości przesyłów i rozmiaru zdjęć i wideo. 
+Kluczem do osiągnięcia tej niemożliwości jest kompresowanie przesyłanych danych. Technik na takowe jest wiele, i zależne od zawartości transmitowanych informacji. Uniwersalnie, możemy użyć algorytmów bezstratnej kompresji danych, jak LZ77 czy kodowanie Huffmana, aby wykorzystać statystyczne właściwości naszych danych, by usunąć niewydajności w naszym zapisie surowych bajtów naszej treści. Dla specyficznych treści, jak te, które na końcu są odbierane przez ludzką percepcję, możemy często usunąć wiele nieważnych detali, jak dokładne wartości każdego z pikseli czy każdą częstotliwość dźwięku, aby stworzyć o wiele mniejszy plik, który jest tylko delikatnie innym doświadczeniem dla odbiorcy. Pewnego rodzaju kompresją może też być samo tworzenie programów - tak jak opisany wcześniej przykład przesyłania każdej klatki na urządzenie użytkownika jest niemożliwe, tak wysłanie programu, który będzie generował nowe klatki z wielkim tempem, korzystając z ogromnych możliwości przetwarzania i przemieszczania danych wewnątrz współczesnych komputerów, jest współcześnie niemalże trywialnie proste.
 
-\begin{center}
-  \begin{tabular}{|c|c|c|}
-    \hline
-    Rodzaj treści & Ilość treści & Rozmiar jednostki \\
-    \hline
-    Anglojęzyczna wikipedia\footnotemark[3] & 1.333 & 21.23GB \\ 
-    Niekompresowane audio jakości CD & 44.6 godzin & 1411 Kbit/s \\
-    Niekompresowane wideo HD (720p 30fps) & 409 sekund & 553 Mbit/s \\
-    Niekompresowane dane ekranu iPhone 14 Pro & 20.8 sekund & 1.36 GB/s \\
-    \hline
-  \end{tabular}
-\end{center}
+Skorzystajmy więc z technik kompresji, żeby poprawić znacznie czas wczytywania naszej witryny.
+
+\section{Kompersja zdjęć}
+
+\selfnote{Czasem fancier formty z większym przetwarzniem tworrzą większe zdjęcia.}
+
+Dzięki użyciu poprawnie kompesji możemy znacznie zmniejszyć rozmiar plików ze zdjęciami. Nasz projekt w podstawowej wersji przesyłał $46.6$MB zdjęć, co przy prędkości łącza $5000$Kbps oznacza około 1 minutę i 15 sekund pobierania, co zgadza się z naszymi testami - pierwsze zdjęcie zaczyna pobierać się nieco przed piątą sekundą, a wczytywanie kończy się koło 82 sekundy. Zdjęcia te były zapisane w formacie PNG, który wspiera tylko bezstratną kompresję\footnote{PNG: The Definitive Guide - ISBN 1-56592-542-4, 1.2.4}, i choć wiele pracy zostało włożone, żeby wykorzystać ją najlepiej jak się da, od pewnego momentu po prostu nie jesteśmy w stanie nie zapisać jakoś danych zawartych na zdjęciu. Głównym założeniem formatu PNG to kompatybilość i edytowalność w pełnej jakości, więc jeżeli chcemy rozmiaru, musimy poszukać innego formatu.
+
+W momencie pisania tego dokumentu, istnieją trzy formaty zdjęć, które konkurują o rolę preferowanego formatu dla obrazów w internecie. Są nimi AVIF, JPEG XL oraz WebP. 
+
+AVIF to format pliku oparty na kodeku wideo AV1, który jest tworzony przez Alliance for Open Media, czyli konsortium największych korporacji oraz projektów open-source. AVIF pozwala na osiągnięcie bardzo małych plików kosztem wielkiej straty jakości, lub dobrą jakość przy średnim, acz lepszym niż dla innych formatów rozmiarze. Niestety, choć za projektem stoją największe jednostki w świecie multimediów, przez nowość tego formatu wsparcie jest dobre, ale dalej z dużymi dziurami. Dodatkowo, konsekwencją bycia pochodną formatu przeznaczonego dla wideo jest to, że AVIF nie posiada możliwości renderowania progresywnego - zdjęcie jest albo w pełni wyświetlone, albo nie jest wyświetlane wcale, więc na wolnym łączu przez cały proces wczytywania zdjęcia nie wyświetla się użytkownikowi cokolwiek. Tak więc jak jest to definitywnie dobra opcja do rozważenia, tak w ramach tego projektu nie skorzystam z AVIF'a.
+
+JPEG XL jest aktywnie rozwijanym następcą używanego powszechnie formatu JPEG. Oferuje szeroki zakres możliwości, jak HDR, większa głębia bitów obrazu, animacje, warstwy i wiele więcej, jednocześnie oferując niesłychanie wydajną kompresję stratną, która w niewielkiej ilości danych oferuje bardzo dobrze wyglądający obraz. Niestety, przez nowość formatu, obsługa takowego jest niemalże zerowa - jedynie parę nowych albo specjalistycznych aplikacji obsługuje ten format, więc w momencie pisania nie jestem w stanie użyć takowego, lecz kiedy pojawi się lepsze wsparcie, zapewne byłby najpraktyczniejszą opcją do użycia.
+
+WebP to stworzony przez Google format, który powstał poprzez wykorzystanie części formatu wideo WebM, aby zapisywać pojedyńcze klatki, więc zdjęcia. Z tej trójki formatów jest on najstarszym, mając przynajmniej dekadę przewagi nad pozostałymi dwoma konkurentami, więc wsparcie wśród przeglądarek jest o wiele większe. Pomimo bycia byłym elementem systemu kodowania wideo, nie ma tego samego problemu z brakiem progresywnego wczytywania, co AVIF. Choć nie jest najlepszym z tych formatów jeżeli chodzi o dostarczanie dobrze wyglądających zdjęć w krótkim czasie, tak praktyczność ogólnodostępnego wyświetlania i wsparcie w narzędziach, użyję tego formatu, żeby przyśpieszyć działanie naszej strony.
+
+
+%Żeby nabrać pewnej intuicji, jak wiele więcej miejsca zajmują zasoby w porównaniu do kodu, zróbmy pewne porównanie. Według zainstalowanego na mojej maszynie Windows'a 11, pliki systemu operacyjnego zajmują $28.3\text{GB}$. W takiej samej ilości danych moglibyśmy zmieścić:
+
+% \begin{center}
+%   \begin{tabular}{|c|c|c|}
+%     \hline
+%     Rodzaj treści & Ilość treści & Rozmiar jednostki \\
+%     \hline
+%     Anglojęzyczna wikipedia\footnotemark[3] & 1.333 & 21.23GB \\ 
+%     Niekompresowane audio jakości CD & 44.6 godzin & 1411 Kbit/s \\
+%     Niekompresowane wideo HD (720p 30fps) & 409 sekund & 553 Mbit/s \\
+%     Niekompresowane dane ekranu iPhone 14 Pro & 20.8 sekund & 1.36 GB/s \\
+%     \hline
+%   \end{tabular}
+% \end{center}
 
 TODO: Napisać, czemu to
 
