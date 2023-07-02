@@ -207,6 +207,32 @@ JPEG XL jest aktywnie rozwijanym następcą używanego powszechnie formatu JPEG.
 
 WebP to stworzony przez Google format, który powstał poprzez wykorzystanie części formatu wideo WebM, aby zapisywać pojedyńcze klatki, więc zdjęcia. Z tej trójki formatów jest on najstarszym, mając przynajmniej dekadę przewagi nad pozostałymi dwoma konkurentami, więc wsparcie wśród przeglądarek jest o wiele większe. Pomimo bycia byłym elementem systemu kodowania wideo, nie ma tego samego problemu z brakiem progresywnego wczytywania, co AVIF. Choć nie jest najlepszym z tych formatów jeżeli chodzi o dostarczanie dobrze wyglądających zdjęć w krótkim czasie, tak praktyczność ogólnodostępnego wyświetlania i wsparcie w narzędziach, użyję tego formatu, żeby przyśpieszyć działanie naszej strony.
 
+Do konwersji obecnych w projekcie zdjęć w formacie PNG na WebP użyję oficjalnego narzędzia stworzonego przez Google o nazwie \verb|cwebp|. Żeby uprościć konwersję, stworzyłem prosty skrypt, który przekonwertuje wszystkie wspierane pliki w aktualnym folderze na WebP z zadanym parametrem jakości. 
+
+\begin{figure}[H]
+  \includegraphics[width=\linewidth]{images/code_script_conv_webm.png}
+  \caption{Skrypt konwertujący zdjęcia na format WebP}
+  \label{fig:script-webp}
+\end{figure}
+
+Po uruchomieniu tego procesu w folderze ze zdjęciami, używając domyślnego parametru jakości równego 20, wygenerowane zostały nowe wersje wszystkich plików zdjęć na stronie. Finalny ich łączny rozmiar to $794.5$KB. W porównaniu do wcześniejszych $46.6$MB, jest to zmniejszenie o $98.3\%$, co jest wielką poprawą.
+
+Możemy więc przetestować wpływ na wczytywanie witryny, przeprowadzając test WebPageTest'u.
+
+\begin{figure}[H]
+  \includegraphics[width=\linewidth]{images/waterfall-after-webp.png}
+  \caption{Wyniki testu po zmianie formatu zdjęć z PNG na WebP}
+  \label{fig:waterfall-after-webp}
+\end{figure}
+
+Jak widać, zminiejszenie rozmiaru zdjęć o ponad $98\%$ odbiło się na czas wczytywania równie intensywnie, co wartość procentowa by sugerowała. Łączny czas wczytywania strony spadł z ponad $82$ sekund do $5.7$ sekundy. Niezmiennie, teraz, kiedy wykres nie jest zdominowany przez wczytywanie zdjęć na końcu procesu ładowania witryny, możemy zauważyć detale tego, co dzieje się w piewszych sekundach po nawigowaniu na naszą stonę.
+
+\section{Analiza wczytywania 2}
+Dzięki przeskalowaniu naszego wykresu, możemy ujrzeć dwa elementy, które wcześniej były zbytnio ściśnięte. Są nimi wcześniej wspomniane pionowe kreski oraz cieńkie elementy wierszy wykesu, repezentujące nawiązywanie połączeń i wykonywanie kodu JavaScript.
+
+Zacznijmy od opisania, co reprezentują pionowe znaczniki. //todo opisać je
+
+// TODO Napisać o połączeniach, przełączyć na h2
 
 %Żeby nabrać pewnej intuicji, jak wiele więcej miejsca zajmują zasoby w porównaniu do kodu, zróbmy pewne porównanie. Według zainstalowanego na mojej maszynie Windows'a 11, pliki systemu operacyjnego zajmują $28.3\text{GB}$. W takiej samej ilości danych moglibyśmy zmieścić:
 
@@ -223,21 +249,6 @@ WebP to stworzony przez Google format, który powstał poprzez wykorzystanie cz�
 %   \end{tabular}
 % \end{center}
 
-TODO: Napisać, czemu to
-
-TODO: Napisać o tym, co było
-
-TODO: Napisać, jakie są dostępne formaty
-
-TODO: Opisać zmianę na webp, skrypt do tego
-
-TODO: Opisać wyniki
-
-\begin{figure}[H]
-  \includegraphics[width=\linewidth]{images/waterfall-after-webp.png}
-  \caption{Waterfall po zmianie formatu zdjęć z png na webp}
-  \label{fig:waterfall-after-webp}
-\end{figure}
 
 \footnotetext[3]{Skompresowana, rozmiar z \url{https://en.wikipedia.org/wiki/Wikipedia:Size_of_Wikipedia}}
 
