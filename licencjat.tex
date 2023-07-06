@@ -307,11 +307,9 @@ Możemy więc takto przygotować pomiary dla kluczowych rozmiarów ekranu:
     $1920$ (Full HD) & $432$ \\
     $1366$ & $368$ \\
     $1280$ (HD) & $368$ \\
-    $1220$ & $359$ \\
-    $1000$ & $301$ \\
+    $1023$ (największy rozmiar tabletowy) & $309$ \\
     $770$ (najmniejszy niemobilny) & $225$ \\
-    \hline
-    $768$ (mobilne wg Bulmy) & $720$ \\
+    $769$ (mobilne wg Bulmy) & $720$ \\
     $640$ (SD) & $592$ \\
     $500$ & $452$ \\
     $320$ (iPhone 3) & $272$ \\
@@ -321,7 +319,15 @@ Możemy więc takto przygotować pomiary dla kluczowych rozmiarów ekranu:
   \end{tabular}
 \end{center}
 
-Jak widać, przez wyłączenie się systemu kolumn na ekranach moblinych, zdjęcia na węższych ekranach są większe, niż na dowolnie dużych. Dla dużych desktopowych rozdzielczości, Bulma przeskakuje między rozmiarami $432$ dla Full HD i $368$ dla zwykłego HD pikseli (aczkolwiek jest niewielkie okno rozmiarów ekranu, gdzie pomiędzy tymi dwoma rozdzielczościami zdjęcia mają inne, deliktanie mniejsze od $432$ rozmiary). Poniżej standardowego HD, 
+Jak widać, przez wyłączenie się systemu kolumn na ekranach moblinych, zdjęcia na węższych ekranach są większe, niż na dowolnie dużych. Dla dużych desktopowych rozdzielczości, Bulma przeskakuje między rozmiarami $432$ dla Full HD i $368$ dla zwykłego HD pikseli (aczkolwiek jest niewielkie okno rozmiarów ekranu, gdzie pomiędzy tymi dwoma rozdzielczościami zdjęcia mają inne, deliktanie mniejsze od $432$ rozmiary). Najmniejsze zdjęcie, jakie wyświetli się na niemobilnym ekranie ma bok $225$ pikseli, ale przy delikatnie mniejszym ekranie rozmiar zdjęcia wzrośnie do największego, jaki kiedykolwiek się wyświetli, czyli $720$ pikseli wysokości i szerokości. W formacie mobilnym zdjęcia maleją w równym tempie co ekran, będąc o $48$ pikseli mniejsze niż jego szerokość, aż do minimum $252$ pikseli.
+
+Możemy więc znaleźć zestaw rozmiarów, które obsłuża potrzebne nam zakresy rozmiarów ekranu. Moglibyśmy generować niezliczone różne rozdzielczości, ale na potrzeby tej strony wystarczający wydaje się zestaw:
+
+\begin{itemize}
+  \item $720$ pikseli, dla dużych telefonów,
+  \item $432$ piksele, dla dużych komputerów i średnich telefonów,
+  \item $368$ pikseli, dla mniejszych komputerów i małych telefonów.
+\end{itemize}
  
 \section{Sprytniejsze stylowanie}
 
