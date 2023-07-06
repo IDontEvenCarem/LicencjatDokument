@@ -228,29 +228,105 @@ Możemy więc przetestować wpływ na wczytywanie witryny, przeprowadzając test
 Jak widać, zminiejszenie rozmiaru zdjęć o ponad $98\%$ odbiło się na czas wczytywania równie intensywnie, co wartość procentowa by sugerowała. Łączny czas wczytywania strony spadł z ponad $82$ sekund do $5.7$ sekundy. Niezmiennie, teraz, kiedy wykres nie jest zdominowany przez wczytywanie zdjęć na końcu procesu ładowania witryny, możemy zauważyć detale tego, co dzieje się w piewszych sekundach po nawigowaniu na naszą stonę.
 
 \section{Analiza wczytywania 2}
-Dzięki przeskalowaniu naszego wykresu, możemy ujrzeć dwa elementy, które wcześniej były zbytnio ściśnięte. Są nimi wcześniej wspomniane pionowe kreski oraz cieńkie elementy wierszy wykesu, repezentujące nawiązywanie połączeń i wykonywanie kodu JavaScript.
+Dzięki przeskalowaniu naszego wykresu, możemy ujrzeć dwa elementy, które wcześniej były zbytnio ściśnięte, by móc się im dobrze przyjżeć. Są nimi wcześniej wspomniane pionowe kreski oraz cieńkie elementy wierszy wykesu, repezentujące nawiązywanie połączeń i wykonywanie kodu JavaScript.
 
-Zacznijmy od opisania, co reprezentują pionowe znaczniki. //todo opisać je
+Pionowe znaczniki pokazują, kiedy odbywają się kluczowe momenty w procesie wczytywania witryny. Chronologicznie, pierwsze dwie zielone kreski oznaczają, kiedy przeglądarka rozpocznie proces generowania obrazu do wyświetlenia, oraz kiedy po raz pierwszy rezultaty renderowania strony zostaną pokazane użytkownikowi. 
 
-// TODO Napisać o połączeniach, przełączyć na h2
+Następna para, w kolorze pomarańczowym oraz fioletowym, przedstawia wydarzenia zakończenia wczytywania. Pomrańczowa kreska oznacza punkt zmiany stanu gotowości dokumentu na \verb|interactive|, co oznacza, że wszystkie dane głównego dokumentu HTML zostały już wczytane i przetworzone, ale podzasoby, jak pliki zdjęć, skyptów, stylów czy osadzone, inne dokumenty, mogą jeszcze się wczytywać\footnote{\url{https://html.spec.whatwg.org/multipage/dom.html\#current-document-readiness}}. Od tego momentu, strona jest w stanie reagować na wejścia użytkownika, jak używanie elementów formularzy, ale nie znaczy to, że całość interaktywnej funkcjonalności strony jest już gotowa, jedynie że możliwość użycia takich funkcji przez użytkownika może istnieć dla niektórych witryn. Fioletowy znacznik pokazuje, kiedy było obsługiwane zdarzenie \verb|DOMContentLoaded|, które jest uruchamiane w reakcji na zmianę stanu gotowości dokumentu. Te dwa wydarzenia powinny zawsze następować bezpośrednio po sobie, natomiast ich szerokość na wykesie oznacza, ile czasu zajeło przetwarzanie tych zmian przez nasłuchujący na nie kod.
 
-%Żeby nabrać pewnej intuicji, jak wiele więcej miejsca zajmują zasoby w porównaniu do kodu, zróbmy pewne porównanie. Według zainstalowanego na mojej maszynie Windows'a 11, pliki systemu operacyjnego zajmują $28.3\text{GB}$. W takiej samej ilości danych moglibyśmy zmieścić:
+Następna para znaczników (acz jeden z nich, jasnoniebieski, nie jest na wykresie dla tej strony pokazany\footnote{Ponieważ strona ta nie używa wydarzenia \texttt{load}, WebPageTest pomija jego znacznik na wykresie. Dla strony która go używa, pojawiłby się on natychmiastowo po ciemnoniebieskiej kresce.}) jest analogiczna do tych właśnie omówionych, ale stan gotowości dokumentu zmienia się na \texttt{complete}, a odpalone wydarzenie to \texttt{load}. Oznaczają one, że głowny dokument jak i jego podzasoby został w pełni wczytane i przetworzone. 
 
-% \begin{center}
-%   \begin{tabular}{|c|c|c|}
-%     \hline
-%     Rodzaj treści & Ilość treści & Rozmiar jednostki \\
-%     \hline
-%     Anglojęzyczna wikipedia\footnotemark[3] & 1.333 & 21.23GB \\ 
-%     Niekompresowane audio jakości CD & 44.6 godzin & 1411 Kbit/s \\
-%     Niekompresowane wideo HD (720p 30fps) & 409 sekund & 553 Mbit/s \\
-%     Niekompresowane dane ekranu iPhone 14 Pro & 20.8 sekund & 1.36 GB/s \\
-%     \hline
-%   \end{tabular}
-% \end{center}
+Kolejne dwa wskaźniki, tym razem przerywane, pokazują zmiany w wyglądzie naszej strony. Pomarańczowy pokazuje moment największej zmiany układu strony, kiedy to najwięcej elementów musiało zmienić swój układ i pozycję. Zielony za to, kiedy nastąpiła największa zmiana w obrazie wyświetlanym przez przeglądarke\footnote{Choć może się wydawać, że te dwa wydarzenia powinny być tym samym, nie koniecznie musi tak być. Przykładowo, strona może najpierw wczytać skórkę, jak tryb ciemny czy wysokiego kontrastu, powodując zmianę wartości pikseli na całym ekranie, a dopiero później wczytać samą treść, sprawiając, że przeglądarka musi ponownie obliczyć układ dokumentu.}. Zmiana przedstawiana przez zieloną kreskę jest nazywana powszechnie, w tym przez WebPageTest, Largest Contentful Paint, w skrócie \textbf{LCP}.
+
+\begin{figure}[H]
+  \includegraphics[width=\linewidth]{images/filmstrip.png}
+  \caption{Zrzuty ekranu z wczytywania witryny, generowane przez WebPageTest. Wczytanie się zawartości tekstowej po $4.$ sekundzie zmieniło rozmiar nagłówka, przez co zawartość poniżej przesunęła się na stronie, co jest zanzaczone przez pomarańczową przerywaną linię. Wczytanie zawartości zdjęcia do sekundy $5.$ zmieniło wygląd strony, ale nie jej układ. }
+  \label{fig:loading-layout-and-lcp}
+\end{figure}
+
+\selfnote{TODO Ponazywać te wydarzenia nazwami (LCP, TTI etc)}
+
+Niektóre z tych metryk są skupione na technicznym aspekcie wczytywania strony, które obchodzą przede wszystkim nasz kod, oraz użytkowe, które są zauważalne przez użytkowników i wpływają na ich komfort używania witryny. Wymiana, która często pojawia się w dziedzinie optymalizacji, to wybór między szybszym wczytaniem całości strony, a przygotowaniem minimum używalnego dla użytkownika. Patrząc na czas do LCP, ponieważ nie cała stona jest wyświetlana na raz, można podjąć decyzję, aby poświęcić treści niżej na stronie, wczytująć je z mniejszym priorytetem, ale skracając czekanie na pokazanie się wstępnego wycinka zawartości, aby użytkownik mógł już mieć cokolwiek używalnego, w trakcie gdy reszta witryny dalej się wczytuje.
+
+Na przykładowym projekcie, na którym prezentuję te techniki, zostały jeszcze okazje, by przyśpieszyć wczytywanie strony w spósób całkowity, ale po zastosowaniu tych zmian, skupię się miejscami na przyśpieszeniu wczytywania z perspektywy użytkownika, czyli kiedy strona wyświetla się i jest używalna, nawet jeżeli nie ma jeszcze pełni treści. Miejscami może to pogorszyć to czas do wczytania całości strony, ale poprawi subiektywne odczucie szybkości witryny, które starają się zmierzyć niektóre omówione heurystyki.
+
+\section{Zmienianie rozmiarów zdjęć}
+
+Prócz kompresji zdjęć, mamy jeszcze jedną taktykę na zmniejszenie ich kontrybucji w przesyle danych. Jest tym wybranie bardziej adekwatnych rozmiarów. Na ten moment, strona używa zdjęć w rozmiarze $2048\times2048$ pikseli, natomiast na wielu ekranach zdjęcia nie są nawet połowy tego rozmiaru.
+
+Do zmiany rozmiaru zdjęć możemy użyć równieć narzędzia, którego użyliśmy do skompresowania zdjęć do formatu WebP, gdyż posiada on też opcje wycinania i zmiany rozmiru zdjęć. Zmodyfikowałem więc skrypt do konwersji, aby generował też obrazy o różnych, zadanych rozmiarach. 
+Dzięki temu zmianie, skrypt generuje warianty tego samego zdjęcia, ale z innymi nazwami i rozmiarami.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{images/code_script_conv_format_and_size.png}
+  \caption{Skrypt konwertujący format pliku, oraz generujący warianty w różnych rozmiarach}
+  \label{fig:script-format-and-size}
+\end{figure}
+
+Mając takie pliki, możemy sprawić, że przeklądarka będzie wybierała optymalne rozmiarowo pliki dla danego urządzenia. Możemy to osiągnąć, modyfikując elementy \texttt{<img>}, aby używały atrybutów \texttt{srcset}\footnote{\url{https://html.spec.whatwg.org/multipage/images.html\#srcset-attribute}} oraz \texttt{sizes}, lub zamienić te elementy na elementy \texttt{picture}\footnote{\url{https://html.spec.whatwg.org/multipage/embedded-content.html\#the-picture-element}} oraz \texttt{source}. Tutaj użyję drugiej metody, ale obie polegają na wyrażeniu tego samego mechanizmu za pomocą różnej składni.
+
+W połączeniu, elementy \texttt{picture} oraz \texttt{source} pozwalają wyświetlać w ramach jednego elementu pliki zdjęć wybrane na bazie CSS'owych kwerend \texttt{media}\footnote{\url{https://www.w3.org/TR/mediaqueries-4/}}. Możemy więc w ramach jednego elementu \texttt{picture} dostarczyć wiele różnych źródeł oraz warunki, aby były one użyte. Możemy więc przeanalizować, dla jakich układów naszej strony potrzebujemy jakiej rozdzielczości zdjęć, i stworzyć zestaw formatów, które sprawią, że do klienta będzie przesyłane nie więcej danych obrazów niż potrzeba.
+
+Dla przykładowego projektu to, jakiej chcemy rozdzielczości nie jest tak proste. Jak widać na rys. \ref{fig:frontpage-articles}, na szerokim, komputerowym monitorze część naszych zdjęc jest wyświetlane w układzie z trzema kolumnami. Gdy jednak przejdziemy na ekran o wiele węższy, na przykłąd komórkowy, kolumny znikają, a karta artykułu, w tym zdjęcie, zajmuje całą szerokość ekranu. Przez to zachowanie, w miarę zmniejszania się ekranu wymagana rozdzielczość zdjęć maleje, ale w pewnym momencie (kiedy wyłącza się układ kolumnowy) rośnie.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth/\real{3.5}]{images/screenshot-iphone11.png}
+  \caption{Układ witryny dla ekranów mobilnych (rozmiar ekranu iPhone 11)}
+  \label{fig:screenshot-iphone11}
+\end{figure}
+
+Jeszcze jednym elementem układu jest to, że na bardzo szerokich monitorach zawartość strony jest centrowana, zostawiając przestrzeń po bokach. Oznacza to, że od pewnej szerokości ekranu w górę, zdjęcia będą takiego samego rozmiaru. 
+
+\begin{figure}[H]
+  \includegraphics[width=\linewidth]{images/screenshot-very-wide.png}
+  \caption{Układ witryny dla bardzo szerokich ekranów}
+  \label{fig:screenshot-verywide}
+\end{figure}
 
 
-\footnotetext[3]{Skompresowana, rozmiar z \url{https://en.wikipedia.org/wiki/Wikipedia:Size_of_Wikipedia}}
+Wiedząć, przy użyciu jakiej technologii zbudowana zostałą ta strona (framework CSS \texttt{Bulma}), oraz że nie były modyfikowane jej ustawienia, wiem również, że tą maksymalną szerokością ekranu jest $1408$ pikseli\footnote{\url{https://web.archive.org/web/20230518134357/https://bulma.io/documentation/layout/container/}}, przy którym centrowana treść dostaje szerokość $1344$ pikseli. W podobny sposób mogę sprawdzić, że układ kolumnowy wyłącza się na ekranach mniejszych niż $768$ pikseli\footnote{\url{https://web.archive.org/web/20230512141342/https://bulma.io/documentation/overview/responsiveness/}}.
+
+Więdząc, jaki jest kod naszej witryny, możemy policzyć, ile dokładnie miejsca zajmie dane zdjęcie przy konkretnej szerokości ekranu. Można też użyć skryptów lub narzędzi developera, aby zmierzyć szerokości elementu wyświetlanego przez przeglądarkę.
+
+\begin{figure}[H]
+  \includegraphics[width=\linewidth]{images/screenshot-devtools-1080width.png}
+  \caption{Mierzenie rozmiaru zdjęcia za pomocą narzędzi developera. Tutaj, dla ekranu $1920\times1080$, zdjęcie jest kwadratem o boku ledwo co poniżej $432$ pikseli.}
+  \label{fig:screenshot-measuring}
+\end{figure}
+
+Możemy więc takto przygotować pomiary dla kluczowych rozmiarów ekranu:
+
+\begin{center}
+  \begin{tabular}{|c|c|}
+    \hline
+    Szerokość ekranu (w pikselach) & Rozmiar zdjęcia (w pikselach) \\
+    \hline
+    $2560$ (Quad HD) & $432$ \\
+    $1920$ (Full HD) & $432$ \\
+    $1366$ & $368$ \\
+    $1280$ (HD) & $368$ \\
+    $1220$ & $359$ \\
+    $1000$ & $301$ \\
+    $770$ (najmniejszy niemobilny) & $225$ \\
+    \hline
+    $768$ (mobilne wg Bulmy) & $720$ \\
+    $640$ (SD) & $592$ \\
+    $500$ & $452$ \\
+    $320$ (iPhone 3) & $272$ \\
+    $300$ & $252$ \\
+    $200$ & $252$ \\
+    \hline
+  \end{tabular}
+\end{center}
+
+Jak widać, przez wyłączenie się systemu kolumn na ekranach moblinych, zdjęcia na węższych ekranach są większe, niż na dowolnie dużych. Dla dużych desktopowych rozdzielczości, Bulma przeskakuje między rozmiarami $432$ dla Full HD i $368$ dla zwykłego HD pikseli (aczkolwiek jest niewielkie okno rozmiarów ekranu, gdzie pomiędzy tymi dwoma rozdzielczościami zdjęcia mają inne, deliktanie mniejsze od $432$ rozmiary). Poniżej standardowego HD, 
+ 
+\section{Sprytniejsze stylowanie}
+
+
+\section{Połączenia i użycie HTTP2}
 
 
 \vspace{5em}
