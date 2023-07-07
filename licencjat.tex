@@ -25,6 +25,7 @@
 \usepackage{tablefootnote}
 \usepackage{hyperref}
 \usepackage{titling}
+\usepackage{interval}
 \bibliographystyle{plain}
 
 \def\mgr{magisterska}
@@ -96,6 +97,9 @@
   linkcolor=red,
   pdftitle={\thetitle},
   pdfborder={0 0 0}
+}
+\intervalconfig{
+  soft open fences
 }
 
 %%% koniec definicji
@@ -329,6 +333,69 @@ Możemy więc znaleźć zestaw rozmiarów, które obsłuża potrzebne nam zakres
   \item $368$ pikseli, dla mniejszych komputerów i małych telefonów.
 \end{itemize}
  
+Po wygenerowaniu naszych obrazów za pomocą skryptu, musimy też dodać obsługę zmiennych rozmiarów w kodzie witryny. Do generowania elementów artykułów na stronie, używany jest framework Vue. Możemy więc zmienić wzorzec, który jest używany przez kod, aby dynamicznie wygenerować treść.
+
+\begin{figure}[H]
+  \includegraphics[width=\linewidth]{images/code-vue-image-card-old.png}
+  \caption{Wzorzec Vue używany do generowania kart z artykułami}
+  \label{fig:code-vue-template-articles-old}
+\end{figure}
+
+W środku tego wzorca, znajdujemy element \texttt{<img>}, którego właściwość \texttt{src} jest dynamicznie ustawiana przez Vue na konkretną, zadaną wartość (Znak \texttt{:} jest używany w Vue do oznaczania właściwości dynamicznych. Tutaj, jest to pole \texttt{image} na obiekcie \texttt{post}.)
+
+Musimy też stworzyć mechanizm, aby wybierać, które zdjęcie ma być wysłane z serwera. W moim przypadku zdecydowałem, żeby serwer wysyłał adres URL zdjęcia z tekstem WIDTH w miejscu, w które należy wstawić żadaną szerokość obrazu. Kod na stronie będzie musiał więc podmieniać ten ciąg na żądaną szerokość w pikselach.
+
+Możemy więc obwinąć element \texttt{<img>} w element \texttt{<picture>}. W takiej konfiguracji, jeżeli mechanizm wybierania lepiej dopasowanych treści nie wybierze żadnego zasobu, to element \texttt{<img>} zostanie użyty jako domyślna wartość.
+
+Możemy więc stworzyć następujący wzorzec:
+
+\begin{figure}[H]
+  \includegraphics[width=\linewidth]{images/code-vue-image-card-mid.png}
+  \caption{Wzorzec częściowo zmodyfikowany, aby używać resposnywnych obrazów}
+  \label{fig:code-vue-template-articles-mid}
+\end{figure}
+
+Niestety, to jeszcze nie koniec zmian, które musimy wprowadzić. Gdybyśmy otworzyli teraz naszą witrynę, zobaczylibyśmy wiele rozmytych zdjęć. Wynika to z tego, że nie podaliśmy kwerend \texttt{media}, które ustalałyby, które ze źródeł wybrać do wyświetlenia. Musimy więc wybrać, w jakim zakesie szerokości ekranów mają być użyte dane obrazy. Patrząc na nasze poprzednie analizy, możemy stwierdzić, że:
+
+\begin{itemize}
+  \item Zdjęcia o szerokości $368$ pikseli powinny być użyte na ekranach szerszych niż $769$, ale węższych lub równych $1366$ pikseli, oraz na węższych niż $416$ pikseli,
+  \item Zdjęcia o szerokości $432$ pikseli powinny być użyte na ekranach o szerokości ponad $1366$ pikseli, oraz na szerszych niż $416$, ale węższych niż $480$ pikseli
+  \item Zdjęcia o szerokości $720$ pikseli powinny być użwyane na ekranach węższych lub równych $769$, ale szerszych niż $480$ pikseli
+\end{itemize}
+
+Rozmiary są do tego testowane od pierwszego w kodzie do ostatniego, wybierając pierwszy, na który kwerenda \texttt{media} zezwala. Ponieważ rozmiar $720\text{px}$ traktujemy jako domyślną, oraz ponieważ jego przedział jest tam, gdzie nie jest pozostałych dwóch, możemy zostawić element \texttt{<img>}, który jest za ten rozmiar odpowiedzialny, zostawić jaki jest.
+
+%\selfnote{Napisać o tym, że ten mechanizm działa na bazie szerokości}
+
+Rozmiar $368\text{px}$ jest preferowany dla szerokości z zakresu $\rinterval{0}{416\text{px}} \cup \linterval{769\text{px}}{1366\text{px}}$. Żeby przekonwertować zakres zamknięty $\interval{a}{b}$ na kwerendę \texttt{media}, odpowiadający kod to \texttt{(min-width: a) and (max-width: b)}. Niestety nie ma sposobu, żeby przekonwertować zakes otwarty, musimy więc wziąc zakes zamknięty z o jeden większą lub mniejszą żądaną granicą przedziału szerokości. Jeżeli dolna granica to zero, oraz kiedy górna jest w nieskończoności, możemy pominąć ich część kodu. Aby wyrazić w kodzie, że dane źródło jest preferowane dla więcej niż jednej kwerendy, tutaj reprezentujących zakresy szerokości, możemy postawić kody tych kwerend po przecinku.
+Tak więc kwerenda \texttt{media}, która wyśwetli zdjęcie o szerokości $368\text{px}$, zgodnie z wyżej opisanymi wymaganiami, to:
+\begin{verbatim}
+  (max-width: 416px), (min-width: 770px) and (max-width: 1366px)
+\end{verbatim}
+Podobnie możemy napisać kwerendę dla zdjęć o szerokości $432\text{px}$:
+\begin{verbatim}
+  (min-width: 417px) and (max-width: 480px), (min-width: 1367px)
+\end{verbatim}
+Dla pozostałych przypadków obsługuje nas domyślny przypadek, więc mamy już wszystkie elementy, żeby w pełni zaimplementować responsywne dopasowywanie rozmiaru zdjęć. Łącząc wszystko, co potrzebne, dostajemy kod:
+
+\begin{figure}[H]
+  \includegraphics[width=\linewidth]{images/code-vue-image-card-done.png}
+  \caption{Zakończony wzorzec, który wybiera zdjęcia o optymalnie małym rozmiarze, aby przesłać jak najmniej danych}
+  \label{fig:code-vue-template-articles-done}
+\end{figure}
+
+Niefortunnym aspektem tej optymalizacji jest to, że będzie ona przynosiła nieco inne efekty dla różnych konfiguracji tego samego sprzętu. Choć wiele razy było opisywane, że mechanizm korzysta z szerokości ekranu, aby ustalić, jakie źródło dla obrazu wybrać, tak jest to prawdą tylko, jeżeli okno przeglądarki zajmuje całą szerokość ekranu. Jeżeli zajmuje ono tylko jakąś część ekranu, to tylko ta część jest traktowana w ramach mechanizmu wyboru.
+
+Testując nasze zmiany przy użyciu WebPageTest'u, dostajemy następujące wyniki:
+
+\begin{figure}[H]
+  \includegraphics[width=\linewidth]{images/waterfall-after-sizing.png}
+  \caption{Wyniki testów bo wdrożeniu responsywnego wyboru zdjęć}
+  \label{fig:waterfall-after-sizing}
+\end{figure}
+
+Porównując z poprzednim testem, łączny czas wczytywania się strony spadł z $5.7\text{sek}$ do $4.7\text{sek}$, więc udało nam się odzyskać sekundę czasu przy każdym wczytaniu naszej strony. Niestety, ponieważ zdjęcia te nie blokowały pierwszego wyświetlenia, ani nie powodowały, że użytkownik czekał na ich wczytanie, aby móc korzystać z interaktywności, nie poprawiły się pozostałę metryki. Niezmiennie, jest to poprawa czasu, jak i oszczędności kosztu transferu danych, a choć czas do zobaczenia przez użytkownika jakieś treści na naszej witrynie nie jest mniejszy, tak mniej czasu będzie spędzone na patrzeniu się na niewczytane lub częściowo wczytane zdjęcia, więc poprawiliśmy używalność podczas wczytywania naszej witryny.
+
 \section{Sprytniejsze stylowanie}
 
 
