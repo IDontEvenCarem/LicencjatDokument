@@ -396,10 +396,85 @@ Testując nasze zmiany przy użyciu WebPageTest'u, dostajemy następujące wynik
 
 Porównując z poprzednim testem, łączny czas wczytywania się strony spadł z $5.7\text{sek}$ do $4.7\text{sek}$, więc udało nam się odzyskać sekundę czasu przy każdym wczytaniu naszej strony. Niestety, ponieważ zdjęcia te nie blokowały pierwszego wyświetlenia, ani nie powodowały, że użytkownik czekał na ich wczytanie, aby móc korzystać z interaktywności, nie poprawiły się pozostałę metryki. Niezmiennie, jest to poprawa czasu, jak i oszczędności kosztu transferu danych, a choć czas do zobaczenia przez użytkownika jakieś treści na naszej witrynie nie jest mniejszy, tak mniej czasu będzie spędzone na patrzeniu się na niewczytane lub częściowo wczytane zdjęcia, więc poprawiliśmy używalność podczas wczytywania naszej witryny.
 
+Alternatywnym sposobem, aby zrealizować podobny efekt optymalizacji, byłoby najpiew wczytanie zasobów w niskiej rozdzielczości, a kiedy strona będzie już w pełni wczytana, zacząć zamieniać ja wyższorozdzielczościowe wersje. Nie omówię tutaj, jak zastosować tą technikę, gdyż ma ona ograniczone wsparcie wśród standardów webowych, więc całość implementacji jest po stronie twórcy witryny. Zbliżona technika do tej będzie zaprezentowana później, acz w kontekście czcionek.
+
+
+\section{Użycie kompresji bezstratnej}
+
+Póki co użyliśmy kompresji zdjęć, aby znacznie zmniejszyć rozmiar plików witryny. Była to kompresja stratna, gdyż nie wszystke detale oryginalnych zdjęć zachowały się przez cały proces, lecz dalej zawarte jest ich wystarczająco dużo, aby obrazy były czytelne. Takiego rodzju kompresji nie możemy zastosować do kodu naszej strony, gdyż każdy ich detal jest kluczowy dla poprawnego funkcjonowania witryny. Możemy jednak użyć kompresji bezstratnej.
+
+Jest wiele różnych algorytmów na bezstratną kompresję danych, ale w ramach tego projektu użyjemy formatu plików \texttt{gzip}, który używa  algorytmu kompresji \texttt{DEFLATE}\footnote{\url{https://www.ietf.org/rfc/rfc1952.txt}, strona 5}.
+
+Algorytm \texttt{DEFLATE} kompresuje dane w dwóch krokach. Pierwszy, to bazowany na algorytmie \texttt{Lempel-Ziv77} mechanizm usuwania powtórzeń, który zastępuje niepierwsze wystąpienia sekwencji bajtów odniesieniami do ich poprzednich wystąpień. Drugi, to rozszerzenie kodowania Huffmana, które poświęca prostotę przetwarzania w modelu "1 bajt, kodujący jeden znak\footnote{Kodowania, gdzie 1 bit to jeden znak są popularne, acz definitywnie nie są jedynym systemem. \texttt{ASCII} koduje jeden znak w $7$miu bitach, natomiast \texttt{Unicode} korzysta ze zmiennej ilości bajtów do przedstwienia jednego symbolu.}, w równych odstępach" na rzecz systemu korzystającego ze zmienniej długości bitowej znaku, nadając najpowszechniej występującym znakom krótsze reprezentacje. Rozszerzenie użyte w algorytnie \texttt{DEFLATE} polega na dodaniu do drzewa Huffmana znaków nie reprezentujących danych, a rodzaje odniesień wygenerowanych przez pierwszy krok.
+
+Ponieważ algorytmy te są bardzo powszechnie używane w internecie, obsługa ich w bardzo wielu przypadkach powinna być bardzo prosta. Serwer, z którego korzystam do wystawiania testowej witryny, korzysta z programu \texttt{nginx} jako serwer. Żeby więc włączyć obsługę kompersji \texttt{gzip}, wystarczy zmodyfikować plik konfiguracji tego serwera, dodając dyrektywy \texttt{gzip on;} oraz ustawiając rodzaje odpowiedzi, które powinny być kompresowane. Mając więc plik konfiguracji wyglądający następująco:
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth/\real{1.55}]{images/code-nginx-conf-trunc-nogzip.png}
+  \caption{Plik konfiguracji nginx, używany przez prawdziwy serwer, z którego pochodzą wyniki pomiarów, z pominientymi danymi zbędnymi do tego tematu.}
+  \label{fig:nginx-before-gzip}
+\end{figure}
+możemy dodać obsługę kompresowania do formatu \texttt{gzip} naszych plików \texttt{HTML}, \texttt{CSS} i \texttt{JavaScript}, zmieniając zawartość tego pliku na:
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth/\real{1.55}]{images/code-nginx-conf-trunc-gzip.png}
+  \caption{Zmodyfikowany plik konfiguracji nginx, uruchamiający kompresję \texttt{gzip} odpowiedzi o formacie \texttt{MIME} \texttt{text/html}, \texttt{text/css} i \texttt{text/javascript}.}
+  \label{fig:nginx-after-gzip}
+\end{figure}
+
+Po zastosowaniu tej zmiany, ponownym uruchomieniu \texttt{nginx} i ponownym przetestowaniu, otrzymujemy następujące wyniki:
+\begin{figure}[H]
+  \includegraphics[width=\linewidth]{images/waterfall-after-gzip.png}
+  \caption{Wyniki testów WebPageTest po uruchomieniu kompresji \texttt{gzip}}
+  \label{fig:waterfall-after-gzip}
+\end{figure}
+
+Jak możemy zauważyć, największym źródłem poprawy czasu wczytywania jest znaczne przyśpieszenie wczytywania pliku \texttt{extra.css}. Prócz tego, poprawy są bardzo ograniczone, co wynika z tego, że duża część zasobów tego typu nie była wysyłana przez nas serwer, a przez serwery usług \texttt{jsdelivr} oraz \texttt{unpkg}, które hostują używane przez strony biblioteki. Ponieważ połączenie nie jest nawiązywane z naszym serwerem, włączenie na nim kompresji nie wpływa na to, jak zostaną wykonane te połączenia.
+
+
+
+
 \section{Sprytniejsze stylowanie}
+
+Kontynuując poprawianie naszej witryny, możemy zwrócić naszą uwagę do zasobów \texttt{CSS}. Choć po skompresowaniu, plik \texttt{extra.css} nie zabiera tak wiele czasu jak wcześniej, tak jest on drugim najdłużej wczytywanym plikiem, zaraz po głównym dokumencie. Ponieważ pliki \texttt{CSS}, które opisują, jak elementy naszej witryny mają wyglądać na ekranie, są zasobami blokującymi wyświetlanie\footnote{\url{https://html.spec.whatwg.org/\#render-blocking-mechanism}}, które dopóki są wczytywane, uniemożliwiają wyświetlenie zawartości strony. Przyśpieszając więc czas ich wczytania, sprawimy, że na witrynie treści zostaną przedstawione użytkownikowi wcześniej.
+
+Szukając okazji do uzyskania wcześniejszego wczytania, rozważmy zmniejszenie rozmiaru plików \texttt{CSS}. Przyglądając się waterfallowi z rysunku \ref{fig:waterfall-after-gzip}, możemy zauważyć, że większość zielonych prostokątów, oznaczających zapytania pobierające pliki \texttt{CSS}, jest w swojej bladej wariacji kolorowej. Oznacza to, że niewiele czasu zostało poświęcone na pobieranie, a wiele na czekanie na dane. Dodatkowo, cieńsze białę kreski przed zielonymi prostokątami pokazują, że zapytania te nie były w stanie przejść natychmiastowo do gotowości do pobierania, a musiały poczekać na skończenie innych aktywności. 
+
+Pomimo tego, że większość czasu poświęconego na arkusze stylów był spędzony na czekaniu, możemy zauważyć dwa bloki bardziej nasyconego zielonego. Pierwszy jest częścią pobierania pliku \texttt{bulma.min.css}, który zawaiera użwaną przez projekt bibliotekę, zbitą w jeden plik zawierający całość funkcji biblioteki. Drugi za to jest powiązany z plikiem \texttt{extra.css}, który jest częścią niebibliotecznego kodu projektu.
+
+Plik \texttt{extra.css} przedstwia bibliotekę CSS'ową, która zawiera wiele tzw. utility classes, klas obiektów pozwalających na dostosowanie wyglądu elementów wyłącznie z poziomu kodu HTML, poprzez użycie wielu klas zawierających w swojej nazwie żądany parametr. W przyadku tego projektu, używane są dwa rodzaje takich klas\footnote{Choć te dwa przypadki są definitywnie przesadzone w skali ilości opcji parametrów, mają one przestawiać odpowiednik wielu mniejszych klas. Ignorując nieco detali związanych z kompresją, można zająć podobną ilość danych, używając wielu utility class o mniejszej liczbie opcji na ich parametry.} - trójka klass \texttt{luma-\#}, \texttt{luma-bg-\#} oraz \texttt{fix-text}, oraz element siatki, otrzymujący dwa parametry w dwóch klasach, \texttt{row-\#} oraz \texttt{col-\#}.
+
+Klasa \texttt{luma-\#}, gdzie \texttt{\#} to liczba od $0$ do $255$, gdy dodana do elementu sprawia, że zawarty tekst przyjmuje kolor w odcieni szarości zależny od liczby \texttt{\#}, poprzez nadanie mu koloru z przestrzenii \texttt{RGB}, z wartościami wszystkich kanałów ustawionymi na \texttt{\#}. Klasa \texttt{luma-bg-\#} wybiera ten sam kolor, co \texttt{luma-\#}, jednak ustawia go na kolor tła, a nie tekstu. Klasa \texttt{fix-text}, kiedy jest ustawiona na elemencie z \texttt{luma-bg-\#}, lub kiedy element dziedziczny takowego ją posiada, ustawia tekst na kontrastujący - biały dla $\texttt{\#} < 127$, czarny dla $\texttt{\#} \geq 127$,
+
+
+https://open-props.style/\#masks
+https://www.bonsaicss.com/
+
+Plik ten przedstawia zwiera
+
+
+
+
+
+\section{Wczytywanie treści HTML asynchronicznie}
+
+
+
+
 
 
 \section{Połączenia i użycie HTTP2}
+
+
+
+
+
+
+\section{Redukcja kodu JavaScript}
+
+
+\section{Dwukrokowe wczytywanie czcionek}
+\selfnote{Czy to będzie potrzebne?}
 
 
 \vspace{5em}
