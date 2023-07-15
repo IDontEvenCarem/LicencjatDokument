@@ -444,14 +444,85 @@ Pomimo tego, że większość czasu poświęconego na arkusze stylów był spęd
 
 Plik \texttt{extra.css} przedstwia bibliotekę CSS'ową, która zawiera wiele tzw. utility classes, klas obiektów pozwalających na dostosowanie wyglądu elementów wyłącznie z poziomu kodu HTML, poprzez użycie wielu klas zawierających w swojej nazwie żądany parametr. W przyadku tego projektu, używane są dwa rodzaje takich klas\footnote{Choć te dwa przypadki są definitywnie przesadzone w skali ilości opcji parametrów, mają one przestawiać odpowiednik wielu mniejszych klas. Ignorując nieco detali związanych z kompresją, można zająć podobną ilość danych, używając wielu utility class o mniejszej liczbie opcji na ich parametry.} - trójka klass \texttt{luma-\#}, \texttt{luma-bg-\#} oraz \texttt{fix-text}, oraz element siatki, otrzymujący dwa parametry w dwóch klasach, \texttt{row-\#} oraz \texttt{col-\#}.
 
-Klasa \texttt{luma-\#}, gdzie \texttt{\#} to liczba od $0$ do $255$, gdy dodana do elementu sprawia, że zawarty tekst przyjmuje kolor w odcieni szarości zależny od liczby \texttt{\#}, poprzez nadanie mu koloru z przestrzenii \texttt{RGB}, z wartościami wszystkich kanałów ustawionymi na \texttt{\#}. Klasa \texttt{luma-bg-\#} wybiera ten sam kolor, co \texttt{luma-\#}, jednak ustawia go na kolor tła, a nie tekstu. Klasa \texttt{fix-text}, kiedy jest ustawiona na elemencie z \texttt{luma-bg-\#}, lub kiedy element dziedziczny takowego ją posiada, ustawia tekst na kontrastujący - biały dla $\texttt{\#} < 127$, czarny dla $\texttt{\#} \geq 127$,
+Klasa \texttt{luma-\#}, gdzie \texttt{\#} to liczba od $0$ do $255$, gdy dodana do elementu sprawia, że zawarty tekst przyjmuje kolor w odcieni szarości zależny od liczby \texttt{\#}, poprzez nadanie mu koloru z przestrzenii \texttt{RGB}, z wartościami wszystkich kanałów ustawionymi na \texttt{\#}. Klasa \texttt{luma-bg-\#} wybiera ten sam kolor, co \texttt{luma-\#}, jednak ustawia go na kolor tła, a nie tekstu. Klasa \texttt{fix-text}, kiedy jest ustawiona na elemencie z \texttt{luma-bg-\#}, lub kiedy element dziedziczny takowego ją posiada, ustawia tekst na kontrastujący - biały dla $\texttt{\#} < 127$, czarny dla $\texttt{\#} \geq 127$.
 
+Sposóby na osiągnięcie takiej funkcjonalności dla wielu przeglądarek przed 2016\footnote{\url{https://caniuse.com/css-variables}} polegały na wielokrotnej duplikacji kodu, poprzez rzeczywiste stworzenie klasy dla każdej rządanej opcji parametru.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth/\real{2.5}]{images/code-css-luma.png}
+  \caption{Wycinek pliku \texttt{extra.css}, definiujący parę wariantów jednek z klas. Podobny kod jest powtórzony wiele razy w reszcie pliku.}
+  \label{fig:css-css-luma}
+\end{figure}
+
+Elementem, który ratuje delikatnie ten kod, to jego podatność na zmniejszenie rozmiaru poprzez bezstratną kompresję danych. Zawarty w używanej przez format \texttt{gzip} algorytm kompresji \texttt{DEFLATE} dużą część uwagi poświęca na usuwanie powtórzeń, i zastąpienie ich odniesieniami do wcześniejszych wystąpień takiego samego fragmentu treści. Oznacza to, że dla kodu w powyższym rysunku, segnemty jak \texttt{".luma-"} czy \texttt{"\{ color: rgb ("} po pierwszym wystąpieniu były by zastępywane odniesieniami wstecz w danych. Mimo to, same parametryzowane fragmenty mogą zabrać niemałą ilość czasu i transferu danych. 
+
+Sposobem, który w pewnym stopniu ratuje nas od konieczności takiego powtarzania, to funkcja o nazwie \texttt{Custom Properties}\footnote{\url{https://www.w3.org/TR/css-variables/}}, zwana także jako css'owe zmienne. Pozwalają nam one napisać kod CSS, który może wykorzystywać definiowane przez nas parametry, i używać ich do obliczeń wbudowanych właściwości CSS.
+
+Żeby stworzyć taką zmienną, używamy podobnej składni, co przy deklarowaniu normalnych właściwości, lecz nadając wybraną nazwę poprzedzoną dwoma myślnikami, np. \texttt{"-\.-columns: 10;"}. Żeby użyć zmiennej w deklaracji innej właściwości, używamy CSS'owej funkcji \texttt{var}, podając jej nazwę zmiennej, oraz opcjonalnie, po przecinku, domyślą wartość, np. \texttt{"color: var(-\.-main-text-color, black);"}.
+Choć ta funkcjonalność wystarcza, aby znacznie zwiększyć możliwości naszego kodu \texttt{CSS}, pozwalając na prostrze tworzenie skórek, ułatwianie modyfikacji istniejących elementów, oraz na właśnie zastąpnienie potrzeby na dziesiątki utility class.
+
+Możemy więc zastąpić wszystkie parametryzowane klasy \texttt{luma-\#} oraz \texttt{luma-bg-\#} dwoma nieparamtryzowanymi, ale korzystających ze zmiennych:
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{images/code-css-luma-vars.png}
+  \caption{Klasy \texttt{luma} i \texttt{luma-bg}, używające zmiennych \texttt{CSS}}
+  \label{fig:css-css-luma-vars}
+\end{figure}
+
+Konsekwencją przerzucenia się na taki model jest to, że co wcześniej było ustawieniem jednej klasy, teraz wymaga ustawienia klasy oraz parametru\footnote{Istnieją możliwości pominięcia tworzenia klasy, użwając faktu, że błędne właściwości, np przez korzystanie z niezdefiniownych zmiennych, są ignorowane, lub poprzez przeszukiwanie własności \texttt{style} na elemencie html. Sposoby te mają również swoje wady, więc zdecydowałęm się pozostać przy klasach.}. Tak więc w użyciu, atrybuty na elemencie zmieniają się z \texttt{class="luma-100"} na \texttt{class="luma" style="-\.-luma: 100;"}.
+
+Trzecia z klas w tej samej grupie, \texttt{fix-text}, wymaga nieco większej złożoności w implementacji zamiennika korzystającego ze zmiennych \texttt{CSS}. Ponieważ przetwarzanie zmiennych wewnątrz \texttt{CSS}'u jest bardzo ograniczone, nawet trywialne w innych językach zadania, jak potrzebne tutaj warunkowe wybranie jednej z dwóch wartości, wymaga użycia sztuczek.
+
+Fundamentalnie, do przetwarzania parametrów wewnątrz kodu \texttt{CSS} używa się funkcji \texttt{calc}. Wewnątrz niej, jesteśmy znacznie ograniczeni w tym, jakie operacje możemy przeprowadzić. Najpowszechniej, dostępne jest dodawanie, odejmowanie, mnożenie i dzielenie, oraz funkcje \texttt{min}, \texttt{max} i \texttt{clamp}, łącząca funkcjonalność dwóch poprzednich w jedno. Prócz tego, w nowszych przeglądarkach mamy dostęp do funkcji trygonometrycznych\footnote{\url{https://caniuse.com/mdn-css_types_sin}}, oraz trwają pracę nad ustandaryzowaniem funkcji zaokrąglających\footnote{\url{https://drafts.csswg.org/css-values/\#round-func}}. Dodatkowo, przetwarzanie kolorów jest na moment pisania ograniczone do funkcji mieszającej kolory, \texttt{color-mix}\footnote{\url{https://drafts.csswg.org/css-color-5/\#color-mix}}.
+
+Pomimo tych ograniczeń, jesteśmy w stanie zreplikować wymaganą funkcjonalność. Możemy użyć funkcji generujących kolor, w tym przypadku \texttt{hsl}\footnote{\url{https://drafts.csswg.org/css-color/\#the-hsl-notation}}, aby wygenerować kolory o zdanej światłości. Ponieważ światłość w modelu opisu koloru \texttt{HSL} jest wartością od $0\%$ do $100\%$, wszystkie wartości poniżej $0\%$ będą traktowane jak $0\%$, natomiast wszystko powyżej $100\%$ jako $100\%$. Jeżeli więc stworzymy funkcję, która będzie generowała wartości $\leq 0$ dla wartości parametru \texttt{-\.-luma}, dla której kolorem tekstu ma być czarny, oraz wartości $> 0$ kiedy kolor ten ma być biały, możemy przekazać tą wartość to funkcji koloru \texttt{hsl} po pomnożeniu przez dużą liczbę.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{images/code-css-luma-calc.png}
+  \caption{Klasa \texttt{CSS} dokonująca obliczeń, aby wybrać pasujący kolor}
+  \label{fig:css-css-luma-calc}
+\end{figure}
+
+Patrząc na powyższy kod, możemy przeanalizować, jak on działa, wykonując obliczenia w bloku \texttt{calc}, pamiętając o ograniczeniu zakresu liczbowego funkcji \texttt{hsl}. Gdyby \texttt{var(-\.-luma)} była równa $100$, to otrzymalibyśmy
+\[
+  \left(100-127\right) \times -1000\% = -27 \times -1000\% = 27000\%
+\]
+\[
+  \min\left(100\%, \max\left(0\%, 27000\%\right)\right) = \min\left(100\%, 27000\%\right) = 100\%
+\]
+Tak więc dla parametru \texttt{-\.-luma} równemu $100$, otrzymamy kolor \texttt{hsl(0, 0\%, 100\%)}, czyli biały. Wstawiając zamiast $100$ w to samo równanie $128$, czyli wartość, dla której chcemy kolor czarny, otrzymamy
+
+\[
+  \left(128-127\right) \times -1000\% = 1 \times -1000\% = -1000\%
+\]
+\[
+  \min\left(100\%, \max\left(0\%, -1000\%\right)\right) = \min\left(100\%, 0\%\right) = 0\%
+\]
+Można wieć zauważyć, że dla wartości parametru powyżej $127$, wynikiem naszej \texttt{calc}ulacji zawsze będzie $0\%$, natomiast poniżej zawsze $100\%$. Dla niecałkowitych własności parametru \texttt{-\.-luma} ta formuła nie zawsze działa. Np. dla $126.95$ otrzymamy $\left(126.95-127\right)\times-1000\% = -0.05 \times -1000\% = 50\%$, co da nam kolor szary. Można zmniejszyć, jaki duży jest obszar dookoła punktu zmiany między białym a czarny, zwiększająć procentowy mnożnik. Dla $1000\%$, wartości mniejsze od punktu zmiany o mniej niż $0.1$ będą miał to nieporządane zachowanie, gdyż $1000\%\times0.1 = 100\%$. Gdybyśmy chcieli, aby ta akceptowalna różnica od granicy była równa $0.05$, możemy policzyć $\frac{100\%}{0.05} = 2000\%$, co jest naszą wartością dla ujemnego mnożnika w formule.
+
+Mamy już całość funkcjonalności z pliku \texttt{extra.css} zawarte w trzech deklaracjach \texttt{CSS}:
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{images/code-css-luma-all.png}
+  \caption{Kod \texttt{CSS} zastępujący funkcjonalność klas pomocniczych z pliku \texttt{extra.css}}
+  \label{fig:css-css-luma-all}
+\end{figure}
+
+Prócz tego musimy dostosować kod generujący elementy do tych zmian. Jeżeli tworzymy nasze elementy za pomocą bezpośrednich API przeglądarki, zmiana ta jest prosta, acz i dla wielu bibliotek ułatwiających tworzenie interfejsów, taka zamiana nie powinna być szczególnie trudna.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{images/code-js-luma-adjust.png}
+  \caption{Zmiana w kodzie \texttt{JavaScript}, który generował elementy korzystające z klas pomocniczych \texttt{luma-\dots}}
+  \label{fig:code-js-luma-adjust}
+\end{figure}
 
 https://open-props.style/\#masks
 https://www.bonsaicss.com/
-
-Plik ten przedstawia zwiera
-
 
 
 
