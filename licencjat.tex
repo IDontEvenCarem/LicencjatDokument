@@ -446,7 +446,14 @@ Plik \texttt{extra.css} przedstwia bibliotekę CSS'ową, która zawiera wiele tz
 
 Klasa \texttt{luma-\#}, gdzie \texttt{\#} to liczba od $0$ do $255$, gdy dodana do elementu sprawia, że zawarty tekst przyjmuje kolor w odcieni szarości zależny od liczby \texttt{\#}, poprzez nadanie mu koloru z przestrzenii \texttt{RGB}, z wartościami wszystkich kanałów ustawionymi na \texttt{\#}. Klasa \texttt{luma-bg-\#} wybiera ten sam kolor, co \texttt{luma-\#}, jednak ustawia go na kolor tła, a nie tekstu. Klasa \texttt{fix-text}, kiedy jest ustawiona na elemencie z \texttt{luma-bg-\#}, lub kiedy element dziedziczny takowego ją posiada, ustawia tekst na kontrastujący - biały dla $\texttt{\#} < 127$, czarny dla $\texttt{\#} \geq 127$.
 
-Sposóby na osiągnięcie takiej funkcjonalności dla wielu przeglądarek przed 2016\footnote{\url{https://caniuse.com/css-variables}} polegały na wielokrotnej duplikacji kodu, poprzez rzeczywiste stworzenie klasy dla każdej rządanej opcji parametru.
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{images/ui-luma-grid.png}
+  \caption{Efekt, który chcemy osiągnąć}
+  \label{fig:ui-luma-grid}
+\end{figure}
+
+Sposóby na osiągnięcie takiej funkcjonalności dla wielu przeglądarek przed 2016\footnote{Rok wzięty z \url{https://caniuse.com/css-variables} - wcześniej tylko Firefox implementował zmienne \texttt{CSS}} polegały na wielokrotnej duplikacji kodu, poprzez rzeczywiste stworzenie klasy dla każdej rządanej opcji parametru.
 
 \begin{figure}[H]
   \centering
@@ -455,7 +462,7 @@ Sposóby na osiągnięcie takiej funkcjonalności dla wielu przeglądarek przed 
   \label{fig:css-css-luma}
 \end{figure}
 
-Elementem, który ratuje delikatnie ten kod, to jego podatność na zmniejszenie rozmiaru poprzez bezstratną kompresję danych. Zawarty w używanej przez format \texttt{gzip} algorytm kompresji \texttt{DEFLATE} dużą część uwagi poświęca na usuwanie powtórzeń, i zastąpienie ich odniesieniami do wcześniejszych wystąpień takiego samego fragmentu treści. Oznacza to, że dla kodu w powyższym rysunku, segnemty jak \texttt{".luma-"} czy \texttt{"\{ color: rgb ("} po pierwszym wystąpieniu były by zastępywane odniesieniami wstecz w danych. Mimo to, same parametryzowane fragmenty mogą zabrać niemałą ilość czasu i transferu danych. 
+Elementem, który ratuje delikatnie ten kod, to jego podatność na zmniejszenie rozmiaru poprzez bezstratną kompresję danych. Zawarty w używanej przez format \texttt{gzip} algorytm kompresji \texttt{DEFLATE} dużą część uwagi poświęca na usuwanie powtórzeń i zastąpienie ich odniesieniami do wcześniejszych wystąpień takiego samego fragmentu treści. Oznacza to, że dla kodu w powyższym rysunku, segnemty jak \texttt{".luma-"} czy \texttt{"\{ color: rgb ("} po pierwszym wystąpieniu były by zastępywane odniesieniami wstecz w danych. Mimo to, same parametryzowane fragmenty mogą zabrać niemałą ilość czasu i transferu danych. 
 
 Sposobem, który w pewnym stopniu ratuje nas od konieczności takiego powtarzania, to funkcja o nazwie \texttt{Custom Properties}\footnote{\url{https://www.w3.org/TR/css-variables/}}, zwana także jako css'owe zmienne. Pozwalają nam one napisać kod CSS, który może wykorzystywać definiowane przez nas parametry, i używać ich do obliczeń wbudowanych właściwości CSS.
 
@@ -521,46 +528,75 @@ Prócz tego musimy dostosować kod generujący elementy do tych zmian. Jeżeli t
   \label{fig:code-js-luma-adjust}
 \end{figure}
 
-https://open-props.style/\#masks
-https://www.bonsaicss.com/
+Kontynuując zamienianie klas pomocniczych na klasy wykorzystujące zmienne \texttt{CSS}, zastąpmy dwie klasy działające wspólnie, \texttt{col-\#} oraz \texttt{row-\#}. Ich działanie polega na stworzeniu siatki w szachownicę, gdzie kolory elementów tej siatki zmieniają się w taki sposób, że elementy po skosie mają ten sam kolor, a elementy ortagonalnie przykległe zmieniają go.
 
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth/\real{1.2}]{images/ui-grid-darken.png}
+  \caption{Efekt, który chcemy uzyskać}
+  \label{fig:ui-grid-darken}
+\end{figure}
 
+Morzemy skorzystać z \texttt{CSS}'owej pseudoklasy \texttt{:nth-child()}. Jest ona uniwersalnie wspierana\footnote{\url{https://caniuse.com/mdn-css_selectors_nth-child}}, i pozwala na wybieranie elementów po ich kolejności na bazie formuły matematycznej. Ponieważ siatka na stronie składa się z elementu zawierającego wiersze, które to zawierają komórki, możemy prosto naprzemiennie pokolorować parzyste i nieparzyste wiersze.
 
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth/\real{1.6}]{images/codeui-row-coloring.png}
+  \caption{Fragment kodu oraz efekt, jaki ma on na siatkę. Warto zwrócić uwagę, że liczenie kolejności elementu zaczyna się od $1$, nie od $0$, więc wiersze pod nieparzystymi indeksami według kodu JavaScript są parzyste według \texttt{CSS}}
+  \label{fig:codeui-row-coloring}
+\end{figure}
+
+Możemy więc wybrać dla tych wierszy tylko ich parzyste komórki, oraz dodać kod wybierające nieparrzyste komórki nieparzystych wierszy.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth/\real{1.6}]{images/codeui-checkerboard-half-coloring.png}
+  \caption{Stylowanie połowy szachownicy w siatce}
+  \label{fig:codeui-checkerboard-half-coloring}
+\end{figure}
+
+Następnie, możemy dodać kod do przeciwnych wypadków, czyli parzystych komórek nieparzystych wierszy oraz nieparzystych komórek parzystych wierszy.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth/\real{1.6}]{images/codeui-checkerboard-coloring.png}
+  \caption{Stylizowanie całości szachownicy}
+  \label{fig:codeui-checkerboard-coloring}
+\end{figure}
+
+Mając ten kod, wystarczy wybrać kolory chcemy, i działanie skończone. Niestety, takie rozwiązanie ma problem, nad rozwiązaniem którego są aktywnie prowadzone prace\footnote{\url{https://drafts.csswg.org/selectors/\#example-3c07f717}}, a jest nim to, że nie możemy wykluczyć elementów z bycia uwzględnianymi w liczeniu parzystości. Gdyby więc mieć w takiej siatce wiersze niebędące częścią szachownicy, np. separatory między różnymi przedstawianymi zbiorami, zaburzałyby one dopasowania do naszej formuły parzystości. Od niedawna dostępna jest opcja dodania selektora \texttt{CSS}, który określa, które z elementów mają być uzwględniane do liczenia tej formuły, i choć funkcja ta jest szeroko wspierana\footnote{\url{https://caniuse.com/css-nth-child-of}}, jest dalej nowa, a jej standaryzacja niezakończona.
+
+Kolejnym elementem optymalizacji \texttt{CSS} który możemy zrobić, to wycięcie z biblioteki Bulma tylko tych części, które potrzebujemy. Na szczęście dla nas, Bulma wspiera proste tworzenie własnych jej wersji poprzez skorzystanie języka \texttt{Scss}, który jest rozszerzeniem \texttt{CSS}. Możemy więc zaimportować tylko części biblioteki, z których chcemy korzystać, i skompilować je do pliku \texttt{CSS}.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{images/code-scss-import-bulma.png}
+  \caption{Plik \texttt{Scss} importujący fragmenty biblioteki Bulma, wybierając tylko używane na stronie jej elementy}
+  \label{fig:code-scss-import-bulma}
+\end{figure}
+
+Ponieważ sami budujemy pliki biblioteki, oraz ponieważ plik \texttt{extra.css} stał się teraz bardzo mały, możemy połączyć je w jeden plik, który będzie spełniał funkcję ich obu. Pomoże to ze stałym kosztem przesyłania danych drzewa Huffmana na początku skompresowanych \texttt{gzip}'em plików, oraz zredukuje ilość równoległych połączeń.
+
+Na końcu możemy dokonać minifikacji generowanych plików \texttt{CSS}. Minifikacja polega na usunięciu pomocnych dla czytelności białych znaków z miejsc, gdzie nie mają one znaczenia dla treści \texttt{CSS}'owych definicji. Możemy do tego użyć narzędzi jak \href{https://www.npmjs.com/package/uglifycss}{uglifycss}, które można użyć z wiersza polecenia lub skryptu \texttt{JavaScript}.
+
+Uruchamiając test WebPageTest'u, otrzymujemy następujące wyniki:
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{images/waterfall-after-css.png}
+  \caption{Wyniki po poprawieniu plików \texttt{CSS}}
+  \label{fig:waterfall-after-css}
+\end{figure}
+
+Porównując z poprzednimi wynikami, to choć strona
 
 \section{Wczytywanie treści HTML asynchronicznie}
 
-
-
-
-
-
 \section{Połączenia i użycie HTTP2}
-
-
-
-
-
 
 \section{Redukcja kodu JavaScript}
 
-
-\section{Dwukrokowe wczytywanie czcionek}
-\selfnote{Czy to będzie potrzebne?}
-
-
-\vspace{5em}
-
-\begin{itemize}
-  \item Lepsze zdjęcia, format, rozmiary
-  \item Kompresja i h2
-  \item Async wczytywanie wielkich treści
-  \item Obcinanie bibliotek JS/CSS
-  \item Unikanie dużych bibliotek do prostych rzeczy
-\end{itemize}
-
-
 \chapter{Zakończenie}
-
 
 \begin{thebibliography}{7}
 \addcontentsline{toc}{chapter}{Bibliografia}
