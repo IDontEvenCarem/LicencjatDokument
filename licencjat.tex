@@ -588,13 +588,41 @@ Uruchamiając test WebPageTest'u, otrzymujemy następujące wyniki:
   \label{fig:waterfall-after-css}
 \end{figure}
 
-Porównując z poprzednimi wynikami, to choć strona
+Porównując z poprzednimi wynikami, to choć witryna wczytuje się łącznie wręcz nieco dłużej, o około $0.11$ sekundy, tak rozpoczęcie renderowania ma miejsce około $0.2$ sekundy wcześniej. Oznacza to, że użytkownicy wcześniej dostają jakąś treść na ekranie, ale po tych specyficznych zmianach musimy poczekać nieco dłużej na pełne wczytanie się zdjęć. Mimo to, szybsze wyświetlenie zawartości strony jest warte dla nas więcej, niż przyśpieszenie momentu jej pełnej gotowości.
 
 \section{Wczytywanie treści HTML asynchronicznie}
 
-\section{Połączenia i użycie HTTP2}
+Następnym elementem powstrzymującym naszą witrynę przed byciem widoczną i używalną jest duży i wolno wczytujący się główny plik \texttt{html}. Jego rozmiar wynika z tego, że zawiera on bardzo dużą ilość treści, przez co strona jest bardzo długa, i znaczna część jej prezentowalnej zawartości jest daleko poza wstępnym widokiem. Możemy więc opóźnić wczytywanie tej treści do momenty po tym, jak wczyta się pierwszy widok na stronie.
+
+Metodą, którą możemy użyć do wczytywania treści \texttt{html} w sposób szybki i wydajny, to używając możliwości strumieniowania połączeń tworzonych przez funkcję \texttt{fetch} oraz tworząc dodatkowe instancje dokumentów html.
+
+Podstawowym konceptem, który wykorzystamy, to tworzenie nowych, częściowych dokumentów przy użyciu funkcji \texttt{document.implementation.createHTMLDocument}. Pozwala nam ona stworzyć dokument przeglądarki, który nie jest powiązany z żadnym oknem lub kontekstem renderowania, więc podczas dodawania do niego treści nie będą dokonywane obliczenia układu strony lub wczytywanie treści wizualnych. Możemy więc, używając \texttt{document.write} na stworzonym przez nas dokumencie wstawiać w niego nowy kod \texttt{html} w trakcie, gdy jest on pobierany.
+
+Aby nałożyć na siebie pobieranie, dekodowanie i interpretowanie danych, możemy użyć systemu strumieni. Używając funkcji \texttt{fetch}, aby pobrać dane z serwera, możemy po nawiązaniu połączenia użyć właściwości \texttt{body} na obiekcie odpowiedzi, aby uzyskać dostęp do strumienia przychodzących danych. Strumień ten składa się z niezinterpretowanych bajtów, które musimy przekonwertować na tekst przy użyciu danego kodowania. Możemy to osiągnąć za pomocą obiektu klasy \texttt{TextDecoderStream}, na którego strumień wejścia można wysyłać sekwencje bajtów, a on na swoim stumieniu wyjścia będzie emitował kolejne \texttt{string}'i. 
+
+Łącząc te koncepty w całość, otrzymujemy następujący kod:
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{images/code-js-async-streaming.png}
+  \caption{Kod wczytujący zasób \texttt{content-spec.html} w sposób asynchroniczny, a następnie wstawiający wczytaną zawartość do treści witryny}
+  \label{fig:code-js-async-streaming}
+\end{figure}
+
+Dodjąc ten kod do strony, i zastępując treści z pliku \texttt{index.html}, która teraz będzie wczytywana, elementem o \texttt{id} \texttt{replace-with-standard}, a następnie testując wydajność witryny po zmianach, otrzymujemy następujące wyniki:
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{images/waterfall-after-async-html.png}
+  \caption{Wyniki pomiarów po wdrożeniu asynchronicznego wczytywanie dużych treści \texttt{html}}
+  \label{fig:waterfall-after-async-html}
+\end{figure}
+
+Porównując te wyniki, otrzymaliśmy wielką poprawę dla łącznego czasu wczytywania oraz rozpoczęcia renderowania. Czas do pierwszej treści na ekranie spadł z $1.4$ sekundy na $1.05$ sekund, co jest poprawą o $25\%$, a łączny czas wczytywania witryny - z $3.4$ do $2.6$ sekund. Zyskaliśmy więc znacznie na obu rodzajach szybkości wczytywania, i zbliżamy się do przełamania $1$ sekundy do pierwszego obrazu.
 
 \section{Redukcja kodu JavaScript}
+
+
 
 \chapter{Zakończenie}
 
