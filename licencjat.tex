@@ -114,7 +114,7 @@
 
 \chapter{Wstęp}
 
-Pomimo nieustającego rozwoju technologii telekomunikacyjnych oraz zwiększania prędkości łączy internetowych, problem wydajności usług internetowych nie zniknął, ani nie zapowiada się, aby tak się zadziało w n. Od potrzeb łączności poza terenami zabudowanymi, przez starzejący lub ograniczony sprzęt, po malejącą cierpliwość użytkowników, dostarczanie treści z serwera do urządzenia użytkownika szybko i efektywnie jest jednym z głównych celów w pracy ze stronami internetowymi.
+Pomimo nieustającego rozwoju technologii telekomunikacyjnych oraz zwiększania prędkości łączy internetowych, problem wydajności usług internetowych nie zniknął, ani nie zapowiada się, aby tak się zadziało w najbliższym czasie. Od potrzeb łączności poza terenami zabudowanymi, przez starzejący lub ograniczony sprzęt, po malejącą cierpliwość użytkowników, dostarczanie treści z serwera do urządzenia użytkownika szybko i efektywnie jest jednym z głównych celów w pracy ze stronami internetowymi.
 
 Celem tej pracy jest zaprezentowanie serii technik i optymalizacji, pozwalających na poprawienie czasów wczytywania witryn internetowych na urządzeniach użytkownika, oraz porównanie ich przy pomocy obiektywnych i powszechnie stosowanych narzędzi i metryk.
 
@@ -127,7 +127,7 @@ skorzystano z narzędzia \texttt{WebPageTest}.
 
 \texttt{WebPageTest} to operowana przez firmę Catchpoint usługa, pozwalająca na wykonanie dokładnego pomiaru wczytywania strony w wybranym regionie, na emulowanym urządzeniu, w określonych warunkach sieciowych. Używając standaryzowanego środowiska, można usunąć wiele zmiennych wynikających z aktywności innych aplikacji na testującej maszynie oraz innych urządzeń w sieci. Sprawia to też, że wyniki są o wiele bardziej uniwersalne - mogąc odnieść się do środowiska ze znanymi charakterystykami wydajności, redukowany jest element niepewności i zgadywania, jak sposób testowania wpłynął na otrzymane pomiary. 
 
-\texttt{WebPageTest} dostarcza dokładny zapis procesu wczytywanie testowanej witryny. Dane te są prezentowane w formie złożonego wykresu, o którym zostanie opowiedziane więcej w późniejszym rozdziale.
+\texttt{WebPageTest} dostarcza dokładny zapis procesu wczytywanie testowanej witryny. Dane te są prezentowane w formie złożonego wykresu, o którym zostało więcej opisane w późniejszym rozdziale.
 
 % Rozważałem wcześniej użycie do pomiarów stworzonego przez Google narzędzia o nazwie Lighthouse, które stara się spełnić podobną funkcję oceny wydajności, acz analizuje też wiele innych metryk dotyczączych rzeczy jak używanie technologii pomagających osobą używającym czytników ekranu, optymalizacji pod kątem wyszukiwarek internetowych, czy współczesności strony. Niestety, sposób działania Lighthouse'a jest ograniczony w swojej dokładności. Zamiast dokonywać pełnej symulacji wydajności standardowego urządzenia, dokonuje on testy w pełnej prędkości, a następnie przeskalowując je. Tak jak nie jest to zła metoda żeby optymalizować lokalnie, gdyż Lighthouse sugeruje też sposoby poprawy, tak użycie go nie eliminuje częściowej zmienności wynikających z natury maszyny, na którym są dokonywane pomiary.
 
@@ -164,7 +164,7 @@ skorzystano z narzędzia \texttt{WebPageTest}.
 
 
 \section{Wstępna analiza wydajności}
-Przed rozpoczęciem optymalizacji witryny, należy zbadać, jak zachowuje się ona przed zminami. Optymalizując na ślepo, jest prosto zmarnować czas na optymalizacjach, które nie zmieniają finalnej wydajności. W przypadku tworzenia witryn internetowych jest to szczególnie prosty do popełnienia błąd. Interakcja równoległego wczytywania zasobów, oraz mechanizm zasobów blokujących może sprawić, że dowolne przyśpieszenie jednej części nie wpłynie zupełnie na finalną szybkość wczytania, gdyż dalsze kroki nie mogą być rozpoczęte przed pełnym ukończeniem wszystkich wcześniejszych.
+Przed rozpoczęciem optymalizacji witryny, należy zbadać, jak zachowuje się ona przed zminami. Optymalizując na ślepo, jest prosto zmarnować czas na działaniach, które nie zmieniają finalnej wydajności. W przypadku tworzenia witryn internetowych jest to szczególnie prosty do popełnienia błąd. Interakcja równoległego wczytywania zasobów, oraz mechanizm zasobów blokujących może sprawić, że dowolne przyśpieszenie jednej części nie wpłynie zupełnie na finalną szybkość wczytania, gdyż dalsze kroki nie mogą być rozpoczęte przed pełnym ukończeniem wszystkich wcześniejszych.
 
 Głównym wynikiem wykonywania analiz przy pomocy \texttt{WebPageTest}'u jest wykres zwany waterfall'em, czyli wodospadem. Jest on bardzo gęsty w dane i zawiera przede wszystkim dane o połączeniach sieciowych oraz stanie przeglądarki. Omówione zostaną podstawy odczytywania takiego\footnote{Dostepna na stronie \texttt{WebPageTest}'u lekko interaktywna wersja tego wykresu pozwala odczytać te dane nieco prościej, oraz daje dostęp do dodatkowych informacji, których nie ma na obrazkowym waterfall'u.}, równocześnie zwracając uwagę na problemy, które można zobaczyć ze wstępnych testów.
 \begin{figure}[h!]
@@ -174,11 +174,11 @@ Głównym wynikiem wykonywania analiz przy pomocy \texttt{WebPageTest}'u jest wy
 \end{figure}
 Na górze wykresu znajduje się legenda, informująca użytkownika, które kolory na wykresie oznaczają jaką fazę rozpoczynania połączeń, oraz rodzaje treści przez te połączenia przesyłane. 
 
-Tuż pod nią, znajduje się główna część, która zawiera najważniejsze dane, czyli wykres rozkładu czasowego realizacji kolejnych zapytań wykonywanych przez przeglądarkę. Od góry do dołu znajdują się kolejne zapytania \texttt{HTTP}, od rozpoczętego najwcześniej do najpóźniej. Od lewej do prawej zaznaczony jest upływ czasu. Same okresy, kiedy zapytania witryny były realizowane, są zaznaczone jako prostokąty na wykresie. Poprzez cienkie prostokąty są zaznaczane obszary czasu, kiedy połączenia nie postępowały stan wczytania naszej strony, specyficznie otwieranie połączeń i wykonywanie kodu JavaScript. Grubymi prostokątami jest zaznaczone, kiedy połączenia było otwarte i gotowe na transfer danych, na blado kiedy nie są przesyłane dane, oraz na mocniejszy kolor kiedy są.
+Tuż pod nią, znajduje się główna część, która zawiera najważniejsze dane, czyli wykres rozkładu czasowego realizacji kolejnych zapytań wykonywanych przez przeglądarkę. Od góry do dołu znajdują się kolejne zapytania \texttt{HTTP}, od rozpoczętego najwcześniej do najpóźniej. Od lewej do prawej zaznaczony jest upływ czasu. Same okresy, kiedy zapytania witryny były realizowane, są zaznaczone jako prostokąty na wykresie. Poprzez cienkie prostokąty są zaznaczane obszary czasu, kiedy połączenia nie postępowały stan wczytania strony, specyficznie otwieranie połączeń i wykonywanie kodu JavaScript. Grubymi prostokątami jest zaznaczone, kiedy połączenia były otwarte i gotowe na transfer danych, na blado kiedy dane nie były przesyłane, oraz na mocniejszy kolor kiedy były.
 
 Poniżej głównego wykresu znajdują się wykresy zawierające informacje o wykorzystaniu procesora. W sytuacji, gdzie gotowość strony powstrzymuje ilość danych, które są w procesie wczytywania przetwarzane, to ten wykres będzie pokazywał, że tak się dzieje.
 
-Jeszcze niżej, znajduje się wykres zużycia łącza. Im linia na nim jest wyżej, tym więcej dostępnego dla testowego urządzenia łącza jest wykorzystywane. W większości sytuacji pożądane jest, aby liczba ta była jak najwyższa, gdyż oznacza to, że wczytywanie jest ograniczane przez zewnętrzne warunki sieciowe, a nie specyfikacja urządzenia lub działanie kodu witryny.
+Jeszcze niżej, znajduje się wykres zużycia łącza. Im linia na nim jest wyżej, tym więcej dostępnego dla testowego urządzenia łącza jest wykorzystywane. W większości sytuacji pożądane jest, aby liczba ta była jak najwyższa, gdyż oznacza to, że wczytywanie jest ograniczane przez zewnętrzne warunki sieciowe, a nie specyfikację urządzenia lub działanie kodu witryny.
 
 Przedostatni wiersz jest zajęty przez wykres przetwarzania wykonywanego przez przeglądarkę. Wysokością przedstawia on, jak bardzo zajęty jest główny wątek przeglądarki, natomiast kolor sygnalizuje, jakie zużywały najwięcej czasu w danym momencie.
 
@@ -192,12 +192,13 @@ Wiedząc, co oznaczają części waterfall'a, można zauważyć, że wczytywanie
 \section{Kompresja}
 Najprostszym sposobem, aby dodać niesłychaną ilość rozmiaru dowolnemu projektowi komputerowemu, jest użycie nieskompresowanych zasobów w dużej rozdzielczości. Dla przykładu, rozdzielczość FullHD, czyli $1920\times1080\left(=2073600\right)$ pikseli, współcześnie bardzo powszechną w każdej klasie jakościowo-cenowej\footnote{Wg Steam Hardware Survey, ponad 66\% użytkowników platformy Steam posiada właśnie taką rozdzielczość na swoim głównym monitorze. Choć dane tej platformy nie są w pełni reprezentatywne całości populacji użytkowników komputerów, jest to i tak duża ich porcja.}, o standardowej formie zapisu koloru pikseli, czyli 3 kanały po 8 bitów na kanał, daje $2073600\times3\times8 = 49766400$ bitów, czyli $49.77$ megabitów. Mając dostępny przeciętny polski internet, który według statystyk firmy Ookla\footnote{Dane wzięte z \url{https://www.speedtest.net/global-index/poland}} jest w stanie pobrać $107.85$ megabitów na sekundę, pobranie jednego, nieskompresowanego zrzutu ekranu zajęłoby $461$ milisekund. Gdyby więc chcieć po prostu przesłać użytkownikom witryny całość ekranu, który mają widzieć, to bez użycia żadnych optymalizacji przeciętne doświadczenie użytkownika to płynności na poziomie dwóch klatek na sekundę.
 
-Pomimo tego, usługi jak filmy czy seriale online, udostępnianie ekranu na komunikatorach jak Teams czy Discord, lub telekonferecjowanie w dużych grupach z wysokiej jakościami kamerkami jakoś obchodzą ograniczenia prędkości przesyłów i rozmiaru zdjęć i wideo. 
-Kluczem do osiągnięcia tej niemożliwości jest kompresowanie przesyłanych danych. Technik na takowe jest wiele, a to która jest najlepsza jest zależne od zawartości transmitowanych informacji. Uniwersalnie, możemy użyć algorytmów bezstratnej kompresji danych, jak \texttt{LZ77} czy kodowanie Huffmana, aby wykorzystać statystyczne właściwości danych, by usunąć niewydajności w zapisie surowych bajtów treści. Dla treści, które na końcu są odbierane przez ludzką percepcję, jak audio czy wideo, możemy często usunąć wiele nieważnych detali. Precyzję w zapisie wartości każdego z pikseli czy niektóre częstotliwości dźwięku można usunąć, aby stworzyć o wiele mniejszy plik, który jest tylko delikatnie innym doświadczeniem dla odbiorcy. Za pewnego rodzaju kompresję można też uznać samo tworzenie programów - tak jak opisany wcześniej przykład przesyłania każdej klatki na urządzenie użytkownika jest niemożliwe, tak wysłanie programu, który będzie generował nowe klatki z wielkim tempem, korzystając z ogromnych możliwości przetwarzania i przemieszczania danych wewnątrz współczesnych komputerów, jest współcześnie niemalże trywialnie proste.
+Pomimo tego, usługi jak filmy czy seriale online, udostępnianie ekranu na komunikatorach jak Teams czy Discord, lub telekonferecjowanie w dużych grupach z wysokiej jakości kamerkami jakoś obchodzą ograniczenia prędkości przesyłów i rozmiaru zdjęć i wideo. Kluczem do osiągnięcia tej niemożliwości jest kompresowanie przesyłanych danych. Technik na takowe jest wiele, a to która jest najlepsza jest zależne od zawartości transmitowanych informacji.
+
+Uniwersalnie, można użyć algorytmów bezstratnej kompresji danych, jak \texttt{LZ77} czy kodowanie Huffmana. Korzystają one z statystycznych własności danych, by usunąć niewydajność w zapisie surowych bajtów treści. Dla zawartości, które na końcu są odbierane przez ludzką percepcję, jak audio czy wideo, można często usunąć wiele nieważnych detali. Precyzję w zapisie wartości każdego z pikseli czy niektóre częstotliwości dźwięku można usunąć, aby stworzyć o wiele mniejszy plik, który jest tylko delikatnie innym doświadczeniem dla odbiorcy. Za pewnego rodzaju kompresję można też uznać samo tworzenie programów - tak jak opisany wcześniej przykład przesyłania każdej klatki na urządzenie użytkownika jest niemożliwe, tak wysłanie programu, który będzie generował nowe klatki z wielkim tempem, korzystając z ogromnych możliwości przetwarzania i przemieszczania danych wewnątrz współczesnych komputerów, jest współcześnie niemalże trywialnie proste.
 
 \section{Kompresja zdjęć}
 
-Dzięki użyciu poprawnie kompresji można znacznie zmniejszyć rozmiar plików ze zdjęciami. Przykładowy projekt w swojej podstawowej wersji przesyłał $46.6$MB zdjęć, co przy prędkości łącza $5000$Kbps oznacza około 1 minutę i 15 sekund pobierania, co zgadza się z wynikami testów - pierwsze zdjęcie zaczyna pobierać się nieco przed piątą sekundą, a wczytywanie kończy się koło 82 sekundy. Zdjęcia te były zapisane w formacie PNG, który wspiera tylko bezstratną kompresję\footnote{PNG: The Definitive Guide - ISBN 1-56592-542-4, 1.2.4}. Choć wiele pracy twórców tego formatu zostało włożone, żeby zapisywać dane zdjęć najwydajniej jak się da, od pewnego momentu po prostu nie da się nie zapisać jakoś danych zawartych na zdjęciu. Głównym założeniem formatu \texttt{PNG} to kompatybilość i edytowalność w pełnej jakości, więc mając na celu najmniejszy rozmiar, należy skorzystać z innego formatu.
+Dzięki użyciu poprawnie kompresji można znacznie zmniejszyć rozmiar plików ze zdjęciami. Przykładowy projekt w swojej podstawowej wersji przesyłał $46.6$MB zdjęć, co przy prędkości łącza $5000$Kbps oznacza około 1 minutę i 15 sekund pobierania, co zgadza się z wynikami testów - pierwsze zdjęcie zaczyna pobierać się nieco przed piątą sekundą, a wczytywanie kończy się koło 82 sekundy. Zdjęcia te były zapisane w formacie PNG, który wspiera tylko bezstratną kompresję\footnote{\cite{png}, 1.2.4}. Choć wiele pracy zostało włożone, żeby format ten zapisywał dane zdjęć najwydajniej jak się da, bez redukcji zawartej informacji nie da się zmniejszyć jej reprezentacji poniżej pewnego stopnia. Głównym założeniem formatu \texttt{PNG} to kompatybilość i edytowalność w pełnej jakości, więc mając na celu najmniejszy rozmiar, należy skorzystać z innego formatu.
 
 W momencie pisania tego dokumentu, istnieją trzy formaty zdjęć, które konkurują o rolę preferowanego formatu dla obrazów w internecie. Są nimi \texttt{AVIF}, \texttt{JPEG XL} oraz \texttt{WebP}. 
 
@@ -207,7 +208,7 @@ W momencie pisania tego dokumentu, istnieją trzy formaty zdjęć, które konkur
 
 \texttt{WebP} to stworzony przez Google format, który powstał poprzez wykorzystanie części formatu wideo \texttt{WebM}, aby zapisywać zdjęcia. Z tej trójki formatów jest on najstarszym, mając przynajmniej dekadę przewagi nad pozostałymi konkurentami, więc wsparcie wśród przeglądarek jest o wiele większe. Pomimo bycia byłym elementem systemu kodowania wideo, nie ma tego samego problemu z brakiem progresywnego wczytywania, co \texttt{AVIF}. Choć nie jest najlepszym z tych formatów jeżeli chodzi o dostarczanie dobrze wyglądających zdjęć w krótkim czasie, tak praktyczność ogólnodostępnego wyświetlania i wsparcie w narzędziach sprawiło, że został on wybrany na użycie do przyśpieszenia przykładowej witryny.
 
-Warto zwrócić uwagę, że nie zdarzają się przypadki, gdzie format dający sobie radę lepiej w większości przypadków radzi sobie o wiele gorzej z kolejnym zdjęciem. Chcąc zmniejszyć rozmiar plików do absolutnego minimum, należy więc porównać wyniki kompresji różnych formatów i przy użyciu różnych ustawień.
+Warto zwrócić uwagę, że zdarzają się przypadki, gdzie format dający sobie radę lepiej w większości przypadków radzi sobie o wiele gorzej z konkretnym zdjęciem. Chcąc zmniejszyć rozmiar plików do absolutnego minimum, należy więc porównać wyniki kompresji różnych formatów i przy użyciu różnych ustawień.
 
 Do konwersji obecnych w projekcie zdjęć w formacie \texttt{PNG} na \texttt{WebP} zostało użyte oficjalne narzędzie stworzonego przez Google o nazwie \texttt{cwebp}. Żeby uprościć konwersję, stworzono prosty skrypt, który przekonwertuje wszystkie wspierane pliki w aktualnym folderze na \texttt{WebP} z zadanym parametrem jakości dodanym do nazwy pliku.
 
@@ -291,11 +292,11 @@ Dodatkowo że na bardzo szerokich monitorach zawartość strony jest centrowana,
 
 Wiedząc, przy użyciu jakiej technologii zbudowana została ta strona (framework \texttt{CSS} o nazwie \texttt{Bulma}), oraz że nie były modyfikowane jej ustawienia, można ustalić, że tą maksymalną szerokością ekranu jest $1408$ pikseli\footnote{\href{https://web.archive.org/web/20230518134357/https://bulma.io/documentation/layout/}{\texttt{https://bulma.io/documentation/layout/}}}, przy którym centrowana treść dostaje szerokość $1344$ pikseli. W podobny sposób można sprawdzić, że układ kolumnowy wyłącza się na ekranach mniejszych niż $768$ pikseli\footnote{\href{https://web.archive.org/web/20230512141342/https://bulma.io/documentation/overview/responsiveness/}{\texttt{https://bulma.io/documentation/overview/responsiveness/}}}.
 
-Wiedząc, jaki jest kod witryny, możemy policzyć, ile dokładnie miejsca zajmie dane zdjęcie przy konkretnej szerokości ekranu. Można też użyć skryptów lub narzędzi developera, aby zmierzyć szerokości elementu wyświetlanego przez przeglądarkę.
+Wiedząc, jaki jest kod witryny, można policzyć, ile dokładnie miejsca zajmie dane zdjęcie przy konkretnej szerokości ekranu. Można też użyć skryptów lub narzędzi dewelopera, aby zmierzyć szerokości elementu wyświetlanego przez przeglądarkę.
 
 \begin{figure}[H]
   \includegraphics[width=\linewidth]{images/screenshot-devtools-1080width.png}
-  \caption{Mierzenie rozmiaru zdjęcia za pomocą narzędzi developera. Tutaj, dla ekranu $1920\times1080$, zdjęcie jest kwadratem o boku ledwo co poniżej $432$ pikseli.}
+  \caption{Mierzenie rozmiaru zdjęcia za pomocą narzędzi dewelopera. Tutaj, dla ekranu $1920\times1080$, zdjęcie jest kwadratem o boku ledwo co poniżej $432$ pikseli.}
   \label{fig:screenshot-measuring}
 \end{figure}
 
@@ -324,7 +325,7 @@ Mierząc rozmiary tych elementów dla różnych rozmiarów ekranu, otrzymano nas
 
 Jak widać, przez wyłączenie się systemu kolumn na ekranach mobilnych, zdjęcia na węższych ekranach są większe, niż na dowolnie dużych. Dla dużych desktopowych rozdzielczości, Bulma przeskakuje między rozmiarami $432$ dla Full HD i $368$ dla zwykłego HD pikseli (aczkolwiek jest niewielkie okno rozmiarów ekranu, gdzie pomiędzy tymi dwoma rozdzielczościami zdjęcia mają inne, delikatnie mniejsze od $432$ rozmiary). Najmniejsze zdjęcie, jakie wyświetli się na niemobilnym ekranie ma bok $225$ pikseli, gdyż przy delikatnie mniejszym ekranie rozmiar zdjęcia wzrośnie do największego, jaki kiedykolwiek się wyświetli, czyli $720$ pikseli wysokości i szerokości. W formacie mobilnym zdjęcia maleją w równym tempie co ekran, będąc o $48$ pikseli mniejsze niż jego szerokość, aż do minimum $252$ pikseli.
 
-Można więc wyznaczyć zestaw rozmiarów, które obsłużą potrzebne zakresy rozmiarów ekranu. Można generować niezliczone różne rozdzielczości, ale na potrzeby tej strony wystarczający wydaje się zestaw:
+Można więc wyznaczyć zestaw rozmiarów, które obsłużą potrzebne zakresy rozmiarów ekranu. Mogą być to niezliczone różne rozdzielczości, ale na potrzeby tej strony wystarczający wydaje się zestaw:
 
 \begin{itemize}
   \item $720$ pikseli, dla dużych telefonów,
@@ -344,7 +345,7 @@ W środku tego wzorca, znajduje się element \texttt{<img>}, którego właściwo
 
 Trzeba stworzyć mechanizm wybierający, które zdjęcie ma być wysłane z serwera. W przypadku tego projektu zdecydowano, żeby serwer wysyłał adres \texttt{URL} zdjęcia z tekstem \texttt{WIDTH} w miejscu, w które należy wstawić żądaną szerokość obrazu. Kod na stronie będzie musiał więc podmieniać ten ciąg na dany rozmiar w pikselach.
 
-W celu implementacji takiego mechanizmu, należy obwinąć element \texttt{<img>} w element \texttt{<picture>}. W takiej konfiguracji, jeżeli mechanizm wybierania lepiej dopasowanych treści nie wybierze żadnego zasobu, to element \texttt{<img>} zostanie użyty jako domyślna wartość.
+W celu implementacji takiego mechanizmu, należy otoczyć element \texttt{<img>} elementem \texttt{<picture>}. W takiej konfiguracji, jeżeli mechanizm wybierania lepiej dopasowanych treści nie wybierze żadnego zasobu, to element \texttt{<img>} zostanie użyty jako domyślna wartość.
 
 Wewnątrz elementu \texttt{<picture>} można zamieścić elementy \texttt{<source>}, które opisują alternatywne źródła plików obrazów. W przeciwieństwie do elementów \texttt{<img>}, używają one atrybutu \texttt{srcset} zamiast \texttt{src}.
 
@@ -364,18 +365,18 @@ Nie jest to jeszcze pełne rozwiązanie. Gdyby otworzyć teraz witrynę, wyświe
   \item Zdjęcia o szerokości $720$ pikseli powinny być używane na ekranach węższych lub równych $769$, ale szerszych niż $480$ pikseli
 \end{itemize}
 
-Źródłą i ich warunki są testowane od pierwszego w kodzie do ostatniego, zatrzymując się na pierwszym, na który kwerenda \texttt{media} zezwala.
+Źródła i ich warunki są testowane od pierwszego w kodzie do ostatniego, zatrzymując się na pierwszym, na który kwerenda \texttt{media} zezwala.
 Ponieważ według wcześniejszych wyborów dotyczących warunków selekcji danych rozmiarów, warunki wyświetlenia rozmiaru $720\text{px}$ są rozłączne do pozostałych dwóch, może on zostać domyślnym źródłem, będąc ustawionym przez element \texttt{<img>}.  
 
 %\selfnote{Napisać o tym, że ten mechanizm działa na bazie szerokości}
 
-Rozmiar $368\text{px}$ jest preferowany dla szerokości z zakresu $\rinterval{0}{416\text{px}} \cup \linterval{769\text{px}}{1366\text{px}}$. Żeby przekonwertować zakres zamknięty $\interval{a}{b}$ na kwerendę \texttt{media}, odpowiadający kod to \texttt{(min-width: a) and (max-width: b)}. Niestety nie ma sposobu, żeby przekonwertować zakres otwarty, trzeba więc użyć zakresu zamkniętego z jedną z granic przesuniętą o jeden piksel. Jeżeli dolna granica to zero, oraz kiedy górna jest w nieskończoności, możemy pominąć ich część kodu\footnote{Tworząc więc kwerendy jak \texttt{(min-width: a)} lub jak \texttt{(max-width: b)}}. Aby zapisać, że dane źródło jest preferowane dla więcej niż jednej kwerendy, tutaj reprezentujących zakresy szerokości, można postawić kody tych kwerend po przecinku.
+Rozmiar $368\text{px}$ jest preferowany dla szerokości z zakresu $\rinterval{0}{416\text{px}} \cup \linterval{769\text{px}}{1366\text{px}}$. Żeby przekonwertować zakres zamknięty $\interval{a}{b}$ na kwerendę \texttt{media}, odpowiadający kod to \texttt{(min-width: a) and (max-width: b)}. Niestety nie ma sposobu, żeby przekonwertować zakres otwarty, trzeba więc użyć zakresu zamkniętego z jedną z granic przesuniętą o jeden piksel. Jeżeli dolna granica to zero, oraz kiedy górna jest w nieskończoności, można pominąć ich część kodu\footnote{Tworząc więc kwerendy jak \texttt{(min-width: a)} lub jak \texttt{(max-width: b)}}. Aby zapisać, że dane źródło jest preferowane dla więcej niż jednej kwerendy, tutaj reprezentujących zakresy szerokości, można postawić kody tych kwerend po przecinku.
 
 Wedle powyższego, kwerenda \texttt{media}, która wyświetli zdjęcie o szerokości $368\text{px}$, zgodnie z wyżej opisanymi wymaganiami, to:
 \begin{verbatim}
   (max-width: 416px), (min-width: 770px) and (max-width: 1366px)
 \end{verbatim}
-Podobnie możemy napisać kwerendę dla zdjęć o szerokości $432\text{px}$:
+Podobnie można napisać kwerendę dla zdjęć o szerokości $432\text{px}$:
 \begin{verbatim}
   (min-width: 417px) and (max-width: 480px), (min-width: 1367px)
 \end{verbatim}
@@ -389,7 +390,7 @@ Są to już wszystkie elementy, żeby w pełni zaimplementować responsywne dopa
   \label{fig:code-vue-template-articles-done}
 \end{figure}
 
-Niefortunnym aspektem tej optymalizacji jest to, że testy witryn korzystających z niej przynoszą nieco inne efekty dla różnych konfiguracji tego samego sprzętu. Mechanizm korzysta z szerokości ekranu aby ustalić, jakie źródło dla obrazu wybrać, tak jest to prawdą tylko kiedy okno przeglądarki zajmuje całą szerokość ekranu. Jeżeli zajmuje ono tylko jakąś część ekranu, na przykład przez wyświetlenie w okienku, to tylko ta część jest traktowana w ramach mechanizmu wyboru.
+Niefortunnym aspektem tej optymalizacji jest to, że testy witryn korzystających z niej przynoszą nieco inne efekty dla różnych konfiguracji tego samego sprzętu. Mechanizm korzysta z szerokości ekranu aby ustalić, jakie źródło dla obrazu wybrać, tak jest to prawdą tylko wtedy, kiedy okno przeglądarki zajmuje całą szerokość ekranu. Jeżeli zajmuje ono tylko jakąś część ekranu, na przykład przez wyświetlenie w okienku, to tylko ta część jest traktowana w ramach mechanizmu wyboru.
 
 Testując te zmiany przy użyciu WebPageTest'u, otrzymano następujące wyniki:
 
@@ -399,14 +400,14 @@ Testując te zmiany przy użyciu WebPageTest'u, otrzymano następujące wyniki:
   \label{fig:waterfall-after-sizing}
 \end{figure}
 
-Porównując z poprzednim testem, łączny czas wczytywania strony spadł z $5.7\text{sek}$ do $4.7\text{sek}$, więc udało się odzyskać sekundę czasu przy każdym wczytaniu strony. Ponieważ zdjęcia nie blokowały pierwszego wyświetlenia, ani nie powodowały oczekiwania na ich wczytanie, aby móc korzystać z interaktywności, zmiany te nie poprawiły pozostałych metryk. Niezmiennie, jest to poprawa czasu, jak i oszczędności kosztu transferu danych, a choć czas do zobaczenia przez użytkownika jakieś treści na witrynie nie jest mniejszy, tak mniej czasu będzie spędzone na patrzeniu się na niewczytane lub częściowo wczytane zdjęcia, więc poprawiono używalność podczas wczytywania witryny.
+Porównując z poprzednim testem, łączny czas wczytywania strony spadł z $5.7\text{sek}$ do $4.7\text{sek}$, więc udało się odzyskać sekundę czasu przy każdym wczytaniu strony. Ponieważ zdjęcia nie blokowały pierwszego wyświetlenia, ani nie powodowały oczekiwania na ich wczytanie, aby móc korzystać z interaktywności, zmiany te nie poprawiły pozostałych metryk. Niezmiennie, jest to poprawa czasu, jak i oszczędności kosztu transferu danych, a choć czas do zobaczenia przez użytkownika treści na witrynie nie jest mniejszy, tak mniej czasu będzie spędzone na patrzeniu się na niewczytane lub częściowo wczytane zdjęcia, więc poprawiono używalność podczas wczytywania witryny.
 
 Alternatywnym sposobem, aby zrealizować podobny efekt optymalizacji, byłoby najpierw wczytywanie zasobów w niskiej rozdzielczości, a kiedy strona będzie już w pełni wczytana, zacząć zamieniać ja wersje o wyższej rozdzielczości. Nie zostanie tutaj omówione, jak zastosować tą technikę, gdyż ma ona ograniczone wsparcie wśród standardów webowych, więc całość implementacji jest po stronie twórcy witryny.
 
 
 \section{Użycie kompresji bezstratnej}
 
-Póki co użyto kompresji zdjęć, aby znacznie zmniejszyć rozmiar plików witryny. Była to kompresja stratna, gdyż nie wszystkie detale oryginalnych zdjęć zachowały się przez cały proces, lecz dalej zawarte jest ich wystarczająco dużo, aby obrazy były czytelne. Takiego rodzaju kompresji nie możemy zastosować do kodu strony, gdyż każdy ich detal jest kluczowy dla poprawnego funkcjonowania witryny. Możemy jednak użyć kompresji bezstratnej.
+Póki co użyto kompresji zdjęć, aby znacznie zmniejszyć rozmiar plików witryny. Była to kompresja stratna, gdyż nie wszystkie detale oryginalnych zdjęć zachowały się przez cały proces, lecz dalej zawarte jest ich wystarczająco dużo, aby obrazy były czytelne. Takiego rodzaju kompresji nie można zastosować do kodu strony, gdyż każdy ich detal jest kluczowy dla poprawnego funkcjonowania witryny. Można jednak użyć kompresji bezstratnej.
 
 Istnieje wiele różnych algorytmów na bezstratną kompresję danych, ale w ramach tego projektu użyto formatu plików \texttt{gzip}, który wykorzystuje algorytm kompresji \texttt{DEFLATE}\footnote{\url{https://www.ietf.org/rfc/rfc1952.txt}, strona 5}.
 
@@ -434,6 +435,8 @@ Po zastosowaniu takich zmian otrzymano następujące wyniki:
   \label{fig:waterfall-after-gzip}
 \end{figure}
 
+Zastosowanie kompresji zmniejszyło łączny czas wczytywania o około $1.4$s, z $4.65$ do $2.45$ sekund, co jest zmianą o koło $30\%$. Czas do pierwszego wyświetlenia zawartości o $1.3$s, z $2.9$ do $1.6$ sekund, czyli witryna była czytelna około $45\%$ szybciej.
+
 Jak można zauważyć, największym źródłem poprawy czasu wczytywania jest znaczne przyśpieszenie wczytywania pliku \texttt{extra.css}. Prócz tego, poprawy są bardzo ograniczone, co wynika z tego, że duża część zasobów tego typu nie była wysyłana przez modyfikowany właśnie serwer, a przez serwery usług \texttt{jsdelivr} oraz \texttt{unpkg}, które dostarczają pliki wielu bibliotek, w tym te używane przez witrynę testową. Ponieważ połączenie jest nawiązywane z innym serwerem, włączenie kompresji na tym nie wpływa na to, jak zostaną wykonane te połączenia.
 
 
@@ -445,7 +448,7 @@ Kontynuując poprawianie witryny, można zwrócić uwagę do zasobów \texttt{CS
 
 Przyglądając się waterfallowi z rysunku \ref{fig:waterfall-after-gzip}, można zauważyć, że większość zielonych prostokątów, oznaczających zapytania pobierające pliki \texttt{CSS}, jest w swojej bladej wariacji kolorowej. Oznacza to, że niewiele czasu zostało poświęcone na pobieranie, a wiele na czekanie na dane. Dodatkowo, cieńsze białe kreski przed zielonymi prostokątami pokazują, że zapytania te nie były w stanie przejść natychmiastowo do gotowości do pobierania, a musiały poczekać na skończenie innych aktywności. 
 
-Pomimo tego, że większość czasu poświęconego na arkusze stylów był spędzony na czekaniu, możemy zauważyć dwa bloki bardziej nasyconego zielonego. Pierwszy jest częścią pobierania pliku \texttt{bulma.min.css}, który zawiera używaną przez projekt bibliotekę, zbitą w jeden plik zawierający jej całość. Drugi za to jest powiązany z plikiem \texttt{extra.css}, który jest częścią nie bibliotecznego kodu projektu.
+Pomimo tego, że większość czasu poświęconego na arkusze stylów był spędzony na czekaniu, można zauważyć dwa bloki bardziej nasyconego zielonego. Pierwszy jest częścią pobierania pliku \texttt{bulma.min.css}, który zawiera używaną przez projekt bibliotekę, zbitą w jeden plik zawierający jej całość. Drugi za to jest powiązany z plikiem \texttt{extra.css}, który jest częścią nie bibliotecznego kodu projektu.
 
 Plik \texttt{extra.css} przedstawia bibliotekę CSS'ową, która zawiera wiele tzw. \emph{utility classes}, czyli klas obiektów pozwalających na dostosowanie wyglądu elementów wyłącznie z poziomu kodu HTML, poprzez użycie wielu klas zawierających w swojej nazwie żądany parametr. W przypadku tego projektu, używane są dwa rodzaje takich klas\footnote{Choć te dwa przypadki są definitywnie przesadzone w skali ilości opcji parametrów, mają one przestawiać odpowiednik wielu mniejszych klas. Ignorując nieco detali związanych z kompresją, można zająć podobną ilość danych, używając wielu utility class o mniejszej liczbie opcji na ich parametry.} - trójka klas \texttt{luma-\#}, \texttt{luma-bg-\#} oraz \texttt{fix-text}, oraz element siatki, otrzymujący dwa parametry w dwóch klasach, \texttt{row-\#} oraz \texttt{col-\#}.
 
@@ -486,9 +489,9 @@ Konsekwencją przerzucenia się na taki model jest to, że co wcześniej było u
 
 Trzecia z klas w tej samej grupie, \texttt{fix-text}, wymaga większej złożoności w implementacji zamiennika korzystającego ze zmiennych \texttt{CSS}. Ponieważ przetwarzanie zmiennych wewnątrz \texttt{CSS}'u jest bardzo ograniczone, nawet trywialne w innych językach zadania, jak potrzebne tutaj warunkowe wybranie jednej z dwóch wartości, wymaga użycia sztuczek i niekonwencjonalnych technik.
 
-Do przetwarzania parametrów wewnątrz kodu \texttt{CSS} używa się funkcji \texttt{calc}\footnote{\url{https://drafts.csswg.org/css-values/\#calc-func}}. Można wewnątrz niej dokonywać operacji na danych, lecz zakres operacji, które możemy przeprowadzić, jest znacznie ograniczony. Dostępne jest dodawanie, odejmowanie, mnożenie i dzielenie, oraz funkcje \texttt{min}, \texttt{max} i \texttt{clamp}\footnote{\texttt{clamp} łączy funkcje \texttt{min} oraz \texttt{max}, obliczając \texttt{clamp(MIN, VAL, MAX) = max(MIN, max(VAL, MAX))}}. W nowszych przeglądarkach jest też dostęp do funkcji trygonometrycznych, oraz trwają pracę nad ustandaryzowaniem funkcji wykładniczych, logarytmicznych i zaokrąglających.
+Do przetwarzania parametrów wewnątrz kodu \texttt{CSS} używa się funkcji \texttt{calc}\footnote{\url{https://drafts.csswg.org/css-values/\#calc-func}}. Można wewnątrz niej dokonywać operacji na danych, lecz zakres operacji, które można przeprowadzić, jest znacznie ograniczony. Dostępne jest dodawanie, odejmowanie, mnożenie i dzielenie, oraz funkcje \texttt{min}, \texttt{max} i \texttt{clamp}\footnote{\texttt{clamp} łączy funkcje \texttt{min} oraz \texttt{max}, obliczając \texttt{clamp(MIN, VAL, MAX) = max(MIN, max(VAL, MAX))}}. W nowszych przeglądarkach jest też dostęp do funkcji trygonometrycznych, oraz trwają pracę nad ustandaryzowaniem funkcji wykładniczych, logarytmicznych i zaokrąglających.
 
-Pomimo tych ograniczeń, jest możliwe zareplikować wymaganą funkcjonalność. Można użyć funkcji generujących kolor, w tym przypadku \texttt{hsl}\footnote{\url{https://drafts.csswg.org/css-color/\#the-hsl-notation}}, aby wygenerować kolory o zdanej światłości. Ponieważ światłość w modelu opisu koloru \texttt{HSL} jest wartością od $0\%$ do $100\%$, wszystkie wartości poniżej $0\%$ będą traktowane jak $0\%$, natomiast wszystko powyżej $100\%$ jako $100\%$. Jeżeli więc stworzona zostanie funkcja, która będzie generowała wartości $\leq 0$ dla wartości parametru \texttt{-\.-luma}, dla której kolorem tekstu ma być czarny, oraz wartości $> 0$ kiedy kolor ten ma być biały, możemy przekazać tą wartość to funkcji koloru \texttt{hsl} po pomnożeniu przez dużą liczbę.
+Pomimo tych ograniczeń, jest możliwe zareplikować wymaganą funkcjonalność. Można użyć funkcji generujących kolor, w tym przypadku \texttt{hsl}\footnote{\url{https://drafts.csswg.org/css-color/\#the-hsl-notation}}, aby wygenerować kolory o zdanej światłości. Ponieważ światłość w modelu opisu koloru \texttt{HSL} jest wartością od $0\%$ do $100\%$, wszystkie wartości poniżej $0\%$ będą traktowane jak $0\%$, natomiast wszystko powyżej $100\%$ jako $100\%$. Jeżeli więc stworzona zostanie funkcja, która będzie generowała wartości $\leq 0$ dla wartości parametru \texttt{-\.-luma}, dla której kolorem tekstu ma być czarny, oraz wartości $> 0$ kiedy kolor ten ma być biały, można przekazać tą wartość to funkcji koloru \texttt{hsl} po pomnożeniu przez dużą liczbę.
 
 \begin{figure}[H]
   \centering
@@ -497,7 +500,7 @@ Pomimo tych ograniczeń, jest możliwe zareplikować wymaganą funkcjonalność.
   \label{fig:css-css-luma-calc}
 \end{figure}
 
-Możemy przeanalizować, jak powyższy kod działa, wykonując obliczenia w bloku \texttt{calc}, pamiętając o ograniczeniu zakresu liczbowego funkcji \texttt{hsl}. Gdyby \texttt{var(-\.-luma)} była równa $100$, to obliczono by
+Można przeanalizować, jak powyższy kod działa, wykonując obliczenia w bloku \texttt{calc}, pamiętając o ograniczeniu zakresu liczbowego funkcji \texttt{hsl}. Gdyby \texttt{var(-\.-luma)} była równa $100$, to obliczono by
 \[
   \left(100-127\right) \times -1000\% = -27 \times -1000\% = 27000\%
 \]
@@ -513,7 +516,7 @@ Tak więc dla parametru \texttt{-\.-luma} równemu $100$, otrzymano kolor \textt
   \min\left(100\%, \max\left(0\%, -1000\%\right)\right) = \min\left(100\%, 0\%\right) = 0\%
 \]
 
-Można wiec zauważyć, że dla wartości parametru powyżej $127$, wynikiem obliczenia będzie kolor o jasności $100\%$, natomiast poniżej o jasności $0\%$. Dla niecałkowitych własności parametru \texttt{-\.-luma} ta formuła nie zawsze działa. Np. dla \texttt{-\.-luma} równego $126.95$ obliczenia dają $\left(126.95-127\right)\times-1000\% = -0.05 \times -1000\% = 50\%$, co na stronie wyświetli kolor szary. Można zmniejszyć, jaki duży jest obszar dookoła punktu zmiany między białym a czarny, w którym formuła nie działa poprawnie, zwiększając procentowy mnożnik. Dla $1000\%$, wartości mniejsze od punktu zmiany o mniej niż $0.1$ będą miały to niepożądane zachowanie, gdyż $1000\%\times0.1 = 100\%$. Gdybyśmy chcieli, aby ta akceptowalna różnica od granicy była równa $0.05$, możemy policzyć $\frac{100\%}{0.05} = 2000\%$, co byłoby wartością dla ujemnego mnożnika w formule dla wersji w takim marginesem precyzji.
+Można wiec zauważyć, że dla wartości parametru powyżej $127$, wynikiem obliczenia będzie kolor o jasności $100\%$, natomiast poniżej o jasności $0\%$. Dla niecałkowitych własności parametru \texttt{-\.-luma} ta formuła nie zawsze działa. Np. dla \texttt{-\.-luma} równego $126.95$ obliczenia dają $\left(126.95-127\right)\times-1000\% = -0.05 \times -1000\% = 50\%$, co na stronie wyświetli kolor szary. Można zmniejszyć, jaki duży jest obszar dookoła punktu zmiany między białym a czarny, w którym formuła nie działa poprawnie, zwiększając procentowy mnożnik. Dla $1000\%$, wartości mniejsze od punktu zmiany o mniej niż $0.1$ będą miały to niepożądane zachowanie, gdyż $1000\%\times0.1 = 100\%$. Gdybyśmy chcieli, aby ta akceptowalna różnica od granicy była równa $0.05$, można policzyć $\frac{100\%}{0.05} = 2000\%$, co byłoby wartością dla ujemnego mnożnika w formule dla wersji w takim marginesem precyzji.
 
 Można więc zastąpić wcześniejsze wersje klas \texttt{luma-\#} za pomocą następujących trzech deklaracji \texttt{CSS}:
 
@@ -569,7 +572,7 @@ Pozostaje dodać kod do przeciwnych wypadków, czyli parzystych komórek nieparz
   \label{fig:codeui-checkerboard-coloring}
 \end{figure}
 
-Do pełnego pożądanego efektu pozostaje wybrać kolory dla danych części szachownicy. Niestety, taki sposób ma problem, nad rozwiązaniem którego są aktywnie prowadzone prace\footnote{\url{https://drafts.csswg.org/selectors/\#example-3c07f717}}, a jest nim to, że nie możemy wykluczyć elementów z bycia uwzględnianymi w liczeniu parzystości. Oznacza to, że gdyby mieć w takiej siatce wiersze niebędące częścią szachownicy, np. separatory między różnymi przedstawianymi zbiorami, zaburzałyby one dopasowania do formuły parzystości. Od niedawna dostępna jest opcja dodania selektora \texttt{CSS}, który określa, które z elementów mają być uwzględniane do liczenia tej formuły, i choć funkcja ta jest szeroko wspierana\footnote{\url{https://caniuse.com/css-nth-child-of}}, jest dalej nowa, a jej standaryzacja niezakończona.
+Do pełnego pożądanego efektu pozostaje wybrać kolory dla danych części szachownicy. Niestety, taki sposób ma problem, nad rozwiązaniem którego są aktywnie prowadzone prace\footnote{\url{https://drafts.csswg.org/selectors/\#example-3c07f717}}, a jest nim to, że nie można wykluczyć elementów z bycia uwzględnianymi w liczeniu parzystości. Oznacza to, że gdyby mieć w takiej siatce wiersze niebędące częścią szachownicy, np. separatory między różnymi przedstawianymi zbiorami, zaburzałyby one dopasowania do formuły parzystości. Od niedawna dostępna jest opcja dodania selektora \texttt{CSS}, który określa, które z elementów mają być uwzględniane do liczenia tej formuły, i choć funkcja ta jest szeroko wspierana\footnote{\url{https://caniuse.com/css-nth-child-of}}, jest dalej nowa, a jej standaryzacja niezakończona.
 
 Kolejnym elementem optymalizacji \texttt{CSS} który można wykonać jest wycięcie z biblioteki \texttt{Bulma} tylko tych części, które są potrzebne do funkcjonowania strony. Bulma wspiera proste tworzenie zmodyfikowanych jej wersji poprzez skorzystanie z języka \texttt{Scss}, który jest rozszerzeniem \texttt{CSS}. Można więc zaimportować tylko części biblioteki, które są potrzebne, i skompilować je do pliku \texttt{CSS}.
 
@@ -593,7 +596,7 @@ Wykonując na tak zoptymalizowanym kodzie test WebPageTest'u, otrzymano następu
   \label{fig:waterfall-after-css}
 \end{figure}
 
-Porównując z poprzednimi wynikami, to choć witryna wczytuje się łącznie nieco dłużej, o około $0.1s$, tak rozpoczęcie renderowania ma miejsce około $0.2s$ wcześniej. Oznacza to, że użytkownicy wcześniej dostają jakąś treść na ekranie, ale po tych specyficznych zmianach musimy poczekać nieco dłużej na pełne wczytanie się zdjęć. Mimo to, szybsze wyświetlenie zawartości strony jest warte dla doświadczenia użytkowników witryny więcej, niż przyśpieszenie momentu jej pełnej gotowości.
+Porównując z poprzednimi wynikami, to choć witryna wczytuje się łącznie nieco dłużej, o około $0.1s$, tak rozpoczęcie renderowania ma miejsce około $0.2s$ wcześniej. Oznacza to, że użytkownicy wcześniej dostają jakąś treść na ekranie, ale po tych specyficznych zmianach musimy poczekać nieco dłużej na pełne wczytanie się zdjęć. Mimo to, szybsze wyświetlenie zawartości strony jest warte więcej dla doświadczenia użytkowników witryny, niż przyśpieszenie momentu jej pełnej gotowości.
 
 \section{Wczytywanie treści HTML asynchronicznie}
 
@@ -631,7 +634,7 @@ W projekcie wykorzystywane są dwie biblioteki JavaScript - \texttt{Vue} oraz \t
 
 Ponieważ użyto \texttt{Vue} tylko do stworzenia stałej treści, można prosto zastąpić je niekorzystającym z tej biblioteki kodem \texttt{JavaScript}. W wersji korzystającej z \texttt{Vue}, definiowano wzorzec struktury kodu \texttt{HTML} zawartości, jaka ma zostać wstawiona na stronę, w formie tekstu, a biblioteka była odpowiedzialna za stworzenie z formy tekstowej i danych rzeczywistych elementów na stronie. Pozbywając się więc biblioteki, trzeba samemu tworzyć te elementy.
 
-W tworzeniu elementów \texttt{HTML} przy użyciu surowego \texttt{JavaScript}'u można wyróżnić dwa podstawowe sposoby na tworzenie złożonych elementów. Pierwszy z nich, to przez modyfikowanie kodu \texttt{HTML} elementów za pomocą właściwości \texttt{innerHTML}, ustawiając ją na tekst zawierający docelowy kod. Drugi, to tworzenie elementów przy pomocy \texttt{document.createElement}, modyfikowanie ich, a potem umieszczanie w drzewie elementów dokumentu. Głównymi wadami pierwszej metody to suboptymalna wydajność, gdyż tworząc wiele elementów wiele razy uruchamiany jest parser \texttt{HTML}. Druga natomiast jest wielce niepraktyczna - ponieważ dostępne metody do tworzenia i manipulacji elementów \texttt{DOM} nie były oryginalnie designowane dla języka \texttt{JavaScript}\footnote{ISBN: 9780764588204, 21.1.}, są one względnie prymitywne, celem funkcjonowania w wielu różnych językach
+W tworzeniu elementów \texttt{HTML} przy użyciu surowego \texttt{JavaScript}'u można wyróżnić dwa podstawowe sposoby na tworzenie złożonych elementów. Pierwszy z nich, to przez modyfikowanie kodu \texttt{HTML} elementów za pomocą właściwości \texttt{innerHTML}, ustawiając ją na tekst zawierający docelowy kod. Drugi, to tworzenie elementów przy pomocy \texttt{document.createElement}, modyfikowanie ich, a potem umieszczanie w drzewie elementów dokumentu. Głównymi wadami pierwszej metody to suboptymalna wydajność, gdyż tworząc wiele elementów wiele razy uruchamiany jest parser \texttt{HTML}. Druga natomiast jest wielce niepraktyczna - ponieważ dostępne metody do tworzenia i manipulacji elementów \texttt{DOM} nie były oryginalnie designowane dla języka \texttt{JavaScript}\footnote{\cite{wspr}, rozdział 21, sekcja 1}, są one względnie prymitywne, celem funkcjonowania w wielu różnych językach
 
 W ramach tego projektu użyto hybrydowego rozwiązania, w ramach którego tworzone są oddzielne elementy \texttt{HTML} dla logicznych elementów prezentacji, ale struktura wysokopoziomowych elementów jest tworzona przy pomocy ustawiania własności \texttt{innerHTML}.
 
@@ -663,7 +666,7 @@ Można podmienić wykorzystania tych bibliotek kodem używającym interfejsy prz
   %https://www.webpagetest.org/customWaterfall.php?test=230717_BiDcB5_53K&run=3&width=930
 \end{figure}
 
-W porównaniu z poprzednimi wynikami, przyśpieszono łączny czas wczytywania witryny z $\approx2.6$s do $2.5$s, co jest niewielką poprawą. Pierwsze wyświetlenie treści natomiast zostało przesunięte o wiele wstecz, z $1.1$s do $0.8$s, co jest poprawą o ponad $25\%$.
+W porównaniu z poprzednimi wynikami, przyśpieszono łączny czas wczytywania witryny z $~2.6$s do $2.5$s, co jest niewielką poprawą. Pierwsze wyświetlenie treści natomiast zostało przesunięte o wiele wstecz, z $1.1$s do $0.8$s, co jest poprawą o ponad $25\%$.
 
 \section{Optymalizacja wykonywania JavaScript}
 
@@ -695,19 +698,59 @@ W porównaniu z poprzednimi wynikami, czas potrzebny na pierwsze wyświetlenie z
 
 \chapter{Zakończenie}
 
-\selfnote{JESZCZE NIE NAPISANE}
+\section{Podsumowanie}
+
+Stosując wszystkie zaprezentowane techniki, zmniejszono czas wczytywania całości witryny z niecałego półtora minuty, do $2.2$s. 
+
+Największą oszczędność przyniosło zmniejszenie i skompresowanie stratnie zdjęć, i skróciło to oczekiwanie na gotowość strony o ponad $90\%$. Do kompresji tej użyto formatu \texttt{WebP}, który choć jest powszechnie dostępny od dopiero kilku lat\footnote{\url{https://hacks.mozilla.org/2019/01/firefox-65-webp-flexbox-inspector-new-tooling/}}, tak już powstają konkurujące formaty celujące w przewyższenie jego osiągnięć, jak \texttt{AVIF} i \texttt{JPEG XL}.
+
+Używając technologii responsywnych zdjęć, dodano wybieranie źródeł dla obrazów na bazie parametrów ekranu. Dodało to dużo złożoności, gdyż wymagało posiadania wielu wariantów tych samych plików, analizy układu treści na stronie, oraz wykorzystując kwerendy \texttt{media}, które są osobnym od \texttt{HTML} i \texttt{CSS} mikrojęzykiem. Pomimo tej złożoności, dodanie tej funkcjonalności pozwoliło oszczędzić sekundę czasu wczytywania.
+
+Przy użyciu kompersji formatu \texttt{gzip}, przyśpieszono całość strony o około $30\%$, a pierwsze wyświetlenie o ~$45\%$. Włączenie takowej wymagało tylko niewielkiej zmiany konfiguracji serwera.
+
+Korzystając z funkcjonalności nowoczesnego \texttt{CSS}, zamieniono setki różnych, podobnych \emph{utility class} na krótkie, acz wymagające innego wykorzystania klas korzystających ze zmiennych \texttt{CSS}. Dodatkowo stworzono dostowowaną do potrzeb testowej witryny wersję biblioteki \texttt{Bulma}, pozbywając się wiele nieużywanych stylów. Przez wcześniej dodaną kompresję, sytuacja przed zastosowaniem tych technik nie była tragiczna, więc zmiana ta oferowała niewielkie, acz zauważalne przyśpieszenie czasu do pierwszego wyświetlenia o $0.2$s.
+
+Tworząc w \texttt{JavaScript}'cie system do wczytywania zawartości \texttt{HTML} przy użyciu równoległej instancji przeglądarkowego dokumentu oraz interfejsów strumieniujących, odzyskano kolejne $25\%$ przyśpieszenia wczytywania, totalnego i do pierwszego obrazu.
+
+Pozbyto się niepotrzebnie wykorzystanych bibliotek \texttt{JavaScript}, zastępując biblioteki \texttt{vue} oraz \texttt{axios} funkcjonalnością wbudowaną w przeglądarkę. Uzyskano niewielkie poprawy w łącznym czasie wczytywania, ale $25\%$ krótsze oczekiwanie na pierwsze wyświetlenie.
+
+Na końcu zoptymalizowano kod \texttt{JavaScript}, usuwając problematyczne użycie operatora \texttt{...}, dzięki czemu uzyskano $0.3$s łącznego czasu wczytywania, co jest przyśpieszeniem o około $12\%$.
+
+\section{Dalsze okazje do optymizacji}
+
+W ramach tego projektu, nie zaprezentowano możliwości optymalizacji udostępnianych przez użycie technologii \texttt{HTTP2} lub \texttt{HTTP3}, które oferują okazje do przyśpieszenia rozpoczynania połączeń, oraz lepszą obsługę równoległych pobierań.
+
+Temat optymalizacji wykonywania kodu \texttt{JavaScript} został poruszony, ale jest w nim wiele więcej złożoności. Przy projekcie jak ten testowy nie pojawiły się okazje, by wgłębić się w detale wydajności skryptów witryn.
+
+Podczas optymalizacji, nie zastosowano zmiany modelu generowania treści strony. Wysyłanie z serwera przynajmniej nagłówkowych treści, jak karuzela z widomościami czy kilka pierwszych postów, mogłoby poprawić wizualną stabilość podczas wczytywania, usuwając duże zmiany układu podczas wczytywania się zawartości.
+
+Tworząc witryny używane globalnie na dużą skalę, poprawne geolokalizowanie serwerów może znacznie poprawić responsywność strony, redukując czas potrzebny na przesłanie sygnału na długie odległości. Serwery testujące \texttt{WebPageTest}'u znajdują się w obszarze niemunicypalnym Dulles w Stanach Zjednoczonych, w stanie Virginia, natomiast serwer wystawiąjący witrynę testową we Frankfurcie w Niemczech. Prostoliniowa droga między tymi dwoma miastami zajmuje światłu $22.7$ms drogi, więc każde połączenie musi poczekać minimum ten czas, aby informacja o chęci nawiązania połączenia została przesłana niemalże $\frac{1}{6}$ Ziemi dalej. Gdyby serwery te były bliżej, mogłyby szybciej nawiązywać połączenia, a więc i szybciej wczytywać testowane witryny.
+
+Pominięta tutaj technika o nazwie \emph{inlining} to umieszczanie jednych zasobów w drugich, w kontekście stron internetowych przede wszystkim umieszczanie stylów, skryptów, danych zdjęć i czcionek w głównym dokumencie \texttt{HTML}. Sprawia to, że są one dostępne natychmiastowo, gdy sam dokument się wczyta. Ponieważ zasoby mogą wczytywać równolegle, przyśpieszając postępowanie do wczytania całości witryny, oraz ponieważ ta równoległość nakłada dodatkowy, stały koszt wydajności, źle zaimplementowany \emph{inlining} może spowolnić wczytywanie strony.
+
 
 \begin{thebibliography}{7}
 \addcontentsline{toc}{chapter}{Bibliografia}
 %
-\bibitem{Lang}
-Serge Lang, 
-\textit{Algebra. Revised third edition}, 
-New York, Springer-Verlag, 2002.
-%
-\bibitem{Kostrykin} 
-Aleksiej Kostrykin, 
-\textit{Wstęp do algebry. Podstawy algebry},
-Warszawa, Wydawnictwo Naukowe PWN, 2022.
+
+\bibitem{wspr}
+Steven M. Schafer,
+\textit{Web Standards Programmer's Reference: HTML, CSS, JavaScript®, Perl, Python®, and PHP},
+Wrox, 2005
+
+\bibitem{wpia}
+Jeremy L. Wagner,
+\textit{Web Performance in Action: Building fast web pages},
+Manning Publications Co., 2017
+
+\bibitem{pwp}
+Peter Smith,
+\textit{Professional Website Performance: Optimizing the Front End and the Back End},
+Wrox, 2013
+
+\bibitem{png}
+Greg Roelofs,
+\textit{PNG: The Definitive Guide},
+O'Reilly, 1999
 \end{thebibliography}
 \end{document}
